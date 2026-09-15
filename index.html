@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emma · 영어 책 친구</title>
+<style>
+  :root{--bg1:#1f3b2d;--bg2:#2f5d45;--cream:#fdf7e6;--gold:#f4c542;--sky:#bfe6ff;--ink:#2a2a2a;--soft:rgba(253,247,230,.65)}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100vh}
+  body{background:linear-gradient(160deg,var(--bg1),var(--bg2)) fixed;color:var(--cream);
+       font-family:"Segoe UI","Malgun Gothic",sans-serif;display:flex;flex-direction:column}
+  .hidden{display:none!important}
+  header{display:flex;align-items:center;gap:10px;padding:14px 20px;font-size:15px;color:var(--soft)}
+  header b{color:var(--cream);font-size:18px}
+  header .sp{flex:1}
+  #timer{font-variant-numeric:tabular-nums}
+  main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 20px 24px}
+  .box{width:100%;max-width:720px}
+
+  /* 시작 화면 */
+  .start{text-align:center}
+  .start .face{font-size:96px;line-height:1}
+  .start h1{font-size:40px;margin:10px 0 4px}
+  .start p{color:var(--soft);font-size:18px;margin:0 0 28px}
+  .big{font-size:26px;font-weight:800;border:0;border-radius:999px;padding:20px 48px;background:var(--gold);color:var(--ink);cursor:pointer;font-family:inherit}
+  .big:active{transform:translateY(2px)}
+  .books{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px}
+  .bk{font-size:15px;font-weight:700;border:3px solid rgba(253,247,230,.3);background:rgba(255,255,255,.06);color:var(--cream);border-radius:18px;padding:10px 8px;cursor:pointer;font-family:inherit;line-height:1.25}
+  .bk .e{display:block;font-size:30px;margin-bottom:2px}
+  .otherrow{margin:0 auto 14px;max-width:420px}
+  .otherrow input{width:100%;font-size:20px;padding:12px 16px;border-radius:14px;border:3px solid var(--gold);font-family:inherit}
+  @media (max-width:760px){.books{grid-template-columns:repeat(2,1fr)}}
+  .bk.on{border-color:var(--gold);background:rgba(244,197,66,.18)}
+
+  /* 꾸미기 */
+  .dress h2{text-align:center;font-size:30px;margin:0 0 12px}
+  .dresswrap{display:flex;gap:22px;align-items:flex-start}
+  .dress .avatar{width:230px;position:sticky;top:10px}
+  .opts{flex:1;max-height:62vh;overflow:auto;padding-right:6px}
+  .opt{margin-bottom:14px}
+  .opt .lb{font-size:15px;color:var(--soft);margin-bottom:6px;font-weight:700}
+  .opt .its{display:flex;flex-wrap:wrap;gap:8px}
+  .it{font-size:16px;border:2px solid rgba(253,247,230,.28);background:transparent;color:var(--cream);border-radius:999px;padding:7px 14px;cursor:pointer;font-family:inherit}
+  .it.on{border-color:var(--gold);background:rgba(244,197,66,.22)}
+  .sw{width:40px;height:40px;border-radius:50%;border:3px solid rgba(253,247,230,.3);cursor:pointer;padding:0}
+  .sw.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(244,197,66,.5)}
+  @media (max-width:760px){.dresswrap{flex-direction:column;align-items:center}.dress .avatar{position:static;width:170px}}
+
+  /* 대화 화면 */
+  .emma{display:flex;gap:18px;align-items:center}
+  .avatar{flex:0 0 auto;width:210px}
+  .avatar svg{width:100%;height:auto;display:block;overflow:visible}
+  .start .avatar{width:170px;margin:0 auto}
+  .e-tilt{transform-box:view-box;transform-origin:100px 150px;transition:transform .35s ease}
+  .avatar.listen .e-tilt{transform:rotate(-8deg)}
+  .e-brows{transition:transform .25s}
+  .avatar.listen .e-brows{transform:translateY(-5px)}
+  .e-eyes{transform-box:view-box;transform-origin:100px 108px}
+  .e-ear{opacity:0;transition:opacity .3s}
+  .avatar.listen .e-ear{opacity:1}
+  .bubble{position:relative}
+  .bubble::before{content:"";position:absolute;left:-12px;top:50%;margin-top:-10px;border:10px solid transparent;border-right:12px solid rgba(255,255,255,.1);border-left:0}
+  .bubble{flex:1;background:rgba(255,255,255,.1);border-radius:6px 24px 24px 24px;padding:20px 22px}
+  .bubble .en{font-size:28px;line-height:1.45;font-weight:700}
+  .bubble .ko{font-size:16px;color:var(--soft);margin-top:8px}
+  .tools{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .sm{font-size:15px;border:0;border-radius:999px;padding:8px 16px;background:rgba(253,247,230,.18);color:var(--cream);cursor:pointer;font-family:inherit}
+  .sm:hover{background:rgba(253,247,230,.3)}
+
+  .choices{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0 228px}
+  .chip{font-size:20px;border:2px solid rgba(253,247,230,.35);background:transparent;color:var(--cream);border-radius:999px;padding:10px 20px;cursor:pointer;font-family:inherit}
+  .chip:hover{background:rgba(253,247,230,.12)}
+  .chiphint{margin:8px 0 0 228px;font-size:13px;color:var(--soft)}
+  @media (max-width:760px){.emma{flex-direction:column}.avatar{width:170px}.bubble::before{display:none}.choices,.chiphint{margin-left:0;justify-content:center;text-align:center}}
+
+  .me{display:flex;justify-content:flex-end;margin-top:22px}
+  .mebubble{max-width:80%;background:var(--sky);color:#0b3a57;border-radius:24px 6px 24px 24px;padding:14px 20px;font-size:24px;font-weight:600}
+  .mebubble.ko{font-size:20px}
+
+  .mic{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:28px}
+  .micbtn{width:120px;height:120px;border-radius:50%;border:0;background:var(--gold);font-size:52px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .micbtn.on{background:#ef5350;animation:pulse 1s infinite}
+  @keyframes pulse{50%{transform:scale(1.07)}}
+  .miclabel{font-size:17px;color:var(--soft)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .next{font-size:20px;font-weight:800;border:0;border-radius:999px;padding:12px 30px;background:var(--cream);color:var(--ink);cursor:pointer;font-family:inherit}
+
+  .mom{margin-top:26px;text-align:center}
+  .mom summary{cursor:pointer;color:var(--soft);font-size:14px}
+  .mom .in{display:flex;gap:8px;margin-top:10px}
+  .mom input{flex:1;font-size:18px;padding:10px 14px;border-radius:12px;border:0;font-family:inherit}
+  .mom.kbd{margin-top:14px}
+  .mom.kbd summary{font-size:18px;font-weight:800;color:var(--cream)}
+  .mom.kbd input{font-size:22px;padding:16px 18px;border:3px solid var(--gold)}
+  .mom.kbd button{font-size:19px;font-weight:800;padding:0 22px}
+  .mom button{font-size:16px;border:0;border-radius:12px;padding:0 18px;background:var(--gold);cursor:pointer;font-family:inherit}
+
+  .wrap{text-align:center}
+  .wrap .face{font-size:80px}
+  .wrap h2{font-size:32px;margin:8px 0}
+  .praise{background:rgba(244,197,66,.18);border-radius:18px;padding:18px;font-size:20px;line-height:1.6;margin:18px 0}
+  .log{text-align:left;background:rgba(0,0,0,.18);border-radius:16px;padding:14px 18px;font-size:15px;line-height:1.7;max-height:36vh;overflow:auto}
+  .log .n{color:var(--sky)}
+  footer{text-align:center;font-size:12px;color:var(--soft);padding:0 0 10px}
+</style>
+</head>
+<body>
+<header>
+  <b>👧🏼 Emma</b><span id="booktag">영어 책 친구</span>
+  <span class="sp"></span>
+  <span id="timer"></span>
+</header>
+
+<main>
+  <!-- 시작 -->
+  <section id="start" class="box start">
+    <div class="avatar" id="avStart"></div>
+    <h1>Emma 만나기</h1>
+    <p>나의 영어 책 친구 · 10분만 가볍게</p>
+    <div class="books" id="books"></div>
+    <div class="otherrow hidden" id="otherRow"><input id="otherTitle" placeholder="읽은 책 제목을 적어 줘 (영어로)"></div>
+    <button class="big" id="go">▶ 시작하기</button>
+    <div style="margin-top:14px"><button class="sm" id="dressBtn">👗 Emma 꾸미기</button></div>
+  </section>
+
+  <!-- 꾸미기 -->
+  <section id="dress" class="box dress hidden">
+    <h2>👗 Emma 꾸미기</h2>
+    <div class="dresswrap">
+      <div class="avatar" id="avDress"></div>
+      <div class="opts" id="opts"></div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="sm" id="rand">🎲 아무거나</button>
+      <button class="sm" id="reset">처음 모습으로</button>
+      <button class="next" id="dressDone">완성! ✨</button>
+    </div>
+  </section>
+
+  <!-- 대화 -->
+  <section id="talk" class="box hidden">
+    <div class="emma">
+      <div class="avatar" id="avTalk"></div>
+      <div class="bubble">
+        <div class="en" id="en"></div>
+        <div class="ko hidden" id="ko"></div>
+        <div class="tools">
+          <button class="sm" id="again">🔁 다시 듣기</button>
+          <button class="sm" id="slow">🐢 천천히</button>
+          <button class="sm" id="showko">뜻 보기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="choices" id="choices"></div>
+    <div class="chiphint hidden" id="chiphint">누르면 Emma가 읽어 줘요 → 따라 말해 봐요</div>
+
+    <div class="me hidden" id="me"><div class="mebubble" id="said"></div></div>
+
+    <div class="mic">
+      <button class="micbtn" id="mic" title="영어로 말하기">🎤</button>
+      <div class="miclabel" id="miclabel">눌러서 영어로 말해 봐</div>
+      <div class="row">
+        <button class="sm" id="micko">🇰🇷 한국어로 말할래</button>
+        <button class="next" id="next">다음 →</button>
+      </div>
+    </div>
+
+    <details class="mom">
+      <summary>엄마가 대신 적기 (마이크가 안 될 때)</summary>
+      <div class="in">
+        <input id="typed" placeholder="내가 한 말 (한국어·영어 모두 OK)">
+        <button id="send">보내기</button>
+      </div>
+    </details>
+  </section>
+
+  <!-- 마무리 -->
+  <section id="end" class="box wrap hidden">
+    <div class="face">🎉</div>
+    <h2>오늘도 Emma랑 이야기했어!</h2>
+    <div class="praise" id="praise"></div>
+    <div class="log" id="log"></div>
+    <div class="row" style="margin-top:18px">
+      <button class="next" id="copy">📋 나도에게 줄 기록 복사</button>
+      <button class="sm" id="home">처음으로</button>
+    </div>
+  </section>
+</main>
+<footer id="voice"></footer>
+
+<script>
+/* ---------------- 움직이는 Emma (말하면 입이 움직이고, 눈을 깜빡이고, 들을 때 고개를 기울인다) ---------------- */
+/* ---- Emma 꾸미기: 내가 고른 모습(localStorage 'emmaLook') ---- */
+const LOOK_OPTIONS={
+  hair:{label:'머리 모양', items:[['pigtails','양갈래'],['long','긴 머리'],['bob','단발'],['ponytail','포니테일'],['buns','똥머리 두 개'],['short','짧은 머리']]},
+  hairColor:{label:'머리색', swatch:true, items:[['#e3a653','금발'],['#7a4a25','갈색'],['#2b2220','검정'],['#c8552b','빨강'],['#ff8fc7','분홍'],['#9b6be0','보라'],['#5fb6e8','하늘']]},
+  skin:{label:'피부색', swatch:true, items:[['#ffe3cc','밝은'],['#ffdcbc','살구'],['#e8b48a','구릿빛'],['#b97a52','갈색']]},
+  eyes:{label:'눈 색', swatch:true, items:[['#3b6fb6','파랑'],['#6b4226','갈색'],['#3f9a5a','초록'],['#8a5bd6','보라'],['#222222','검정']]},
+  outfit:{label:'옷 색', swatch:true, items:[['#5bbf8a','초록'],['#ff7aa8','분홍'],['#ffc93c','노랑'],['#5fb6e8','하늘'],['#9b6be0','보라'],['#ef5350','빨강'],['#ffffff','하양']]},
+  acc:{label:'꾸미개', items:[['none','없음'],['bow','리본'],['headband','머리띠'],['glasses','안경'],['star','별 핀'],['cat','고양이 귀'],['flower','꽃']]},
+  freckles:{label:'주근깨', items:[['on','있음'],['off','없음']]}
+};
+const DEFAULT_LOOK={hair:'pigtails',hairColor:'#e3a653',skin:'#ffdcbc',eyes:'#3b6fb6',outfit:'#5bbf8a',acc:'none',freckles:'on'};
+let LOOK={...DEFAULT_LOOK};
+try{ LOOK={...DEFAULT_LOOK, ...JSON.parse(localStorage.getItem('emmaLook')||'{}')}; }catch(e){}
+
+function shade(hex,amt){
+  const n=parseInt(hex.slice(1),16); let r=n>>16,g=(n>>8)&255,b=n&255;
+  const f=v=>Math.max(0,Math.min(255,Math.round(v*(1+amt))));
+  return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+function emmaSVG(L){
+  const hc=L.hairColor, hd=shade(hc,-.18), sk=L.skin, skd=shade(sk,-.06);
+  const back={
+    pigtails:`<circle cx="34" cy="118" r="22" fill="${hd}"/><circle cx="166" cy="118" r="22" fill="${hd}"/>
+              <path d="M34 60 C50 20 150 20 166 60 L170 120 L30 120 Z" fill="${hd}"/>
+              <circle cx="44" cy="100" r="6" fill="#ff7aa8"/><circle cx="156" cy="100" r="6" fill="#ff7aa8"/>`,
+    long:`<path d="M36 70 C44 18 156 18 164 70 L174 200 C150 212 50 212 26 200 Z" fill="${hd}"/>`,
+    bob:`<path d="M36 70 C44 20 156 20 164 70 L168 140 C156 150 140 146 136 132 L64 132 C60 146 44 150 32 140 Z" fill="${hd}"/>`,
+    ponytail:`<path d="M150 40 C196 40 200 110 178 150 C176 118 170 84 146 66 Z" fill="${hd}"/>
+              <path d="M34 64 C50 20 150 20 166 64 L168 110 L32 110 Z" fill="${hd}"/>
+              <circle cx="152" cy="46" r="7" fill="#ff7aa8"/>`,
+    buns:`<circle cx="52" cy="42" r="22" fill="${hd}"/><circle cx="148" cy="42" r="22" fill="${hd}"/>
+          <path d="M34 64 C50 20 150 20 166 64 L168 110 L32 110 Z" fill="${hd}"/>`,
+    short:`<path d="M38 80 C40 26 160 26 162 80 L160 104 L40 104 Z" fill="${hd}"/>`
+  }[L.hair]||'';
+  const catEars = L.acc==='cat' ? `<path d="M44 58 L50 14 L84 38 Z" fill="${hc}"/><path d="M52 50 L55 26 L74 40 Z" fill="#ffb3c7"/>
+                                   <path d="M156 58 L150 14 L116 38 Z" fill="${hc}"/><path d="M148 50 L145 26 L126 40 Z" fill="#ffb3c7"/>` : '';
+  const accFront={
+    bow:`<g transform="translate(142 52)"><path d="M0 0 L-20 -12 L-20 12 Z" fill="#ff5c93"/><path d="M0 0 L20 -12 L20 12 Z" fill="#ff5c93"/><circle r="6" fill="#ff8fb4"/></g>`,
+    headband:`<path d="M44 80 C56 34 144 34 156 80" stroke="#ff5c93" stroke-width="9" fill="none" stroke-linecap="round"/>`,
+    glasses:`<g stroke="#3a3a4a" stroke-width="3.5" fill="rgba(255,255,255,.15)"><circle cx="77" cy="109" r="16"/><circle cx="123" cy="109" r="16"/><path d="M93 108 Q100 103 107 108" fill="none"/></g>`,
+    star:`<path transform="translate(62 62) scale(1.1)" d="M0 -12 L3.5 -4 L12 -4 L5 1.5 L7.5 10 L0 5 L-7.5 10 L-5 1.5 L-12 -4 L-3.5 -4 Z" fill="#ffd23c" stroke="#e0a800" stroke-width="1.5"/>`,
+    flower:`<g transform="translate(140 56)"><circle cx="0" cy="-9" r="7" fill="#fff"/><circle cx="9" cy="0" r="7" fill="#fff"/><circle cx="0" cy="9" r="7" fill="#fff"/><circle cx="-9" cy="0" r="7" fill="#fff"/><circle r="6" fill="#ffc93c"/></g>`
+  }[L.acc]||'';
+  const collar = L.outfit==='#ffffff' ? '#5fb6e8' : '#fdf7e6';
+  return `
+<svg viewBox="0 0 200 230" xmlns="http://www.w3.org/2000/svg" aria-label="Emma">
+ <g class="e-bob">
+  <!-- 몸 -->
+  <path d="M38 230 C40 190 62 176 100 176 C138 176 160 190 162 230 Z" fill="${L.outfit}"/>
+  <path d="M82 178 L100 196 L118 178 Z" fill="${collar}"/>
+  <rect x="88" y="156" width="24" height="26" rx="10" fill="${skd}"/>
+  <g class="e-tilt">
+   <!-- 뒷머리 -->
+   ${catEars}
+   ${back}
+   <!-- 얼굴 -->
+   <ellipse cx="100" cy="110" rx="58" ry="60" fill="${sk}"/>
+   <ellipse cx="43" cy="114" rx="8" ry="11" fill="${skd}"/><ellipse cx="157" cy="114" rx="8" ry="11" fill="${skd}"/>
+   <!-- 앞머리 -->
+   <path d="M42 96 C44 50 80 40 100 44 C122 40 158 50 158 96 C146 80 132 70 116 66 C120 76 112 82 104 70 C94 82 70 84 58 76 C52 84 46 90 42 96 Z" fill="${hc}"/>
+   <!-- 눈썹 -->
+   <g class="e-brows" stroke="${shade(hc,-.35)}" stroke-width="3.5" stroke-linecap="round" fill="none">
+    <path d="M66 88 Q76 82 86 87"/><path d="M114 87 Q124 82 134 88"/>
+   </g>
+   <!-- 눈 -->
+   <g class="e-eyes">
+    <ellipse cx="77" cy="108" rx="10" ry="12" fill="#fff"/>
+    <ellipse cx="123" cy="108" rx="10" ry="12" fill="#fff"/>
+    <circle cx="78" cy="110" r="7" fill="${L.eyes}"/><circle cx="122" cy="110" r="7" fill="${L.eyes}"/>
+    <circle cx="78" cy="110" r="3.6" fill="#1b2a3a"/><circle cx="122" cy="110" r="3.6" fill="#1b2a3a"/>
+    <circle cx="81" cy="106" r="2.4" fill="#fff"/><circle cx="125" cy="106" r="2.4" fill="#fff"/>
+   </g>
+   ${accFront}
+   <!-- 볼·주근깨 -->
+   <ellipse cx="62" cy="130" rx="11" ry="7" fill="#ff8fa3" opacity=".35"/>
+   <ellipse cx="138" cy="130" rx="11" ry="7" fill="#ff8fa3" opacity=".35"/>
+   ${L.freckles==='on'?`<g fill="${shade(sk,-.28)}"><circle cx="88" cy="126" r="1.3"/><circle cx="93" cy="129" r="1.3"/><circle cx="107" cy="129" r="1.3"/><circle cx="112" cy="126" r="1.3"/></g>`:''}
+   <path d="M98 118 Q100 122 102 118" stroke="${shade(sk,-.2)}" stroke-width="2" fill="none" stroke-linecap="round"/>
+   <!-- 입 -->
+   <path class="e-smile" d="M86 140 Q100 152 114 140" stroke="#b5485a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+   <g class="e-open" style="display:none">
+    <ellipse class="e-mouth" cx="100" cy="143" rx="11" ry="6" fill="#8e2f42"/>
+    <ellipse class="e-tongue" cx="100" cy="147" rx="6" ry="2.5" fill="#ff8a9a"/>
+    <rect class="e-teeth" x="92" y="137" width="16" height="3.5" rx="1.5" fill="#fff"/>
+   </g>
+   <!-- 듣는 중 표시 -->
+   <text class="e-ear" x="168" y="80" font-size="26">👂</text>
+  </g>
+ </g>
+</svg>`;
+}
+
+const Emma=(()=>{
+  const hosts=[];
+  let talking=false, open=0, target=0, nextChange=0, t0=performance.now();
+  function mount(el){ el.innerHTML=emmaSVG(LOOK); hosts.push(el); }
+  function each(fn){ hosts.forEach(h=>fn(h)); }
+  function blink(){
+    each(h=>{const e=h.querySelector('.e-eyes'); e.animate([{transform:'scaleY(1)'},{transform:'scaleY(.08)'},{transform:'scaleY(1)'}],{duration:180});});
+    setTimeout(blink, 2500+Math.random()*3000);
+  }
+  function frame(now){
+    if(talking){
+      if(now>nextChange){ target=Math.random()<.18?1:3+Math.random()*9; nextChange=now+70+Math.random()*80; }
+    } else target=0;
+    open+= (target-open)*0.45;
+    const bob = talking ? Math.sin((now-t0)/160)*1.6 : Math.sin((now-t0)/900)*1.2;
+    each(h=>{
+      const isOpen=open>1.2;
+      h.querySelector('.e-smile').style.display=isOpen?'none':'';
+      h.querySelector('.e-open').style.display=isOpen?'':'none';
+      if(isOpen){
+        h.querySelector('.e-mouth').setAttribute('ry',open.toFixed(1));
+        h.querySelector('.e-mouth').setAttribute('rx',(9+open*0.35).toFixed(1));
+        h.querySelector('.e-tongue').setAttribute('cy',(143+open*0.55).toFixed(1));
+        h.querySelector('.e-teeth').setAttribute('y',(143-open+1).toFixed(1));
+      }
+      h.querySelector('.e-bob').setAttribute('transform',`translate(0 ${bob.toFixed(2)})`);
+    });
+    requestAnimationFrame(frame);
+  }
+  return {
+    init(){ ['avStart','avTalk','avDress'].forEach(id=>mount(document.getElementById(id))); requestAnimationFrame(frame); setTimeout(blink,1500); },
+    redraw(){ each(h=>{ const l=h.classList.contains('listen'); h.innerHTML=emmaSVG(LOOK); h.classList.toggle('listen',l); }); },
+    talk(on){ talking=on; },
+    pulse(){ if(talking){ target=10+Math.random()*3; nextChange=performance.now()+110; } },
+    listen(on){ each(h=>h.classList.toggle('listen',on)); }
+  };
+})();
+Emma.init();
+
+/* ---------------- 목소리 ---------------- */
+const PREFS=['Ana Online (Natural)','Ava Online (Natural)','Emma Online (Natural)','Jenny Online (Natural)','Aria Online (Natural)','Natural'];
+let VOICE=null;
+function pickVoice(){
+  const vs=speechSynthesis.getVoices().filter(v=>v.lang.startsWith('en'));
+  for(const p of PREFS){const v=vs.find(x=>x.name.includes(p)); if(v) return v;}
+  return vs[0]||null;
+}
+function loadVoice(){
+  return new Promise(res=>{
+    VOICE=pickVoice(); if(VOICE) return res();
+    speechSynthesis.onvoiceschanged=()=>{VOICE=pickVoice(); if(VOICE) res();};
+    setTimeout(res,2000);
+  });
+}
+function showVoice(){ document.getElementById('voice').textContent = VOICE ? '목소리: '+VOICE.name : '목소리를 못 찾았어요 (인터넷 연결 확인)'; }
+function say(text,rate=0.92){
+  return new Promise(res=>{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    if(VOICE){u.voice=VOICE;u.lang=VOICE.lang;} else u.lang='en-US';
+    u.rate=rate; u.pitch=1.05;
+    u.onstart=()=>Emma.talk(true);
+    u.onboundary=()=>Emma.pulse();
+    u.onend=()=>{Emma.talk(false);res();}; u.onerror=()=>{Emma.talk(false);res();};
+    speechSynthesis.speak(u);
+  });
+}
+
+/* ---------------- 대화 재료 ---------------- */
+// 원칙: 질문 하나씩 · 줄거리는 아이가 · 리캐스트(틀렸다 말 안 함) · 막히면 둘 중 고르기
+const DRAGONS=['Worm','Shu','Vulcan','Kepri','Petra','Ruby'];
+const KO_WORDS=[[/웜/,'Worm'],[/불|파이어/,'fire'],[/날|하늘/,'fly'],[/강|세/,'strong'],[/착|친절/,'kind'],[/멋/,'cool'],[/귀여/,'cute'],[/물/,'water'],[/독/,'poison'],[/모르|몰라/,'?']];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clean=t=>t.trim().replace(/[.!?]+$/,'');
+
+let state={book:null};
+
+let STEPS=[];
+const DM_STEPS=[
+ {en:"Hi again, friend! It's me, Emma. I'm so happy to talk with you!",
+  ko:"다시 만나서 반가워! 나 Emma야. 너랑 얘기해서 너무 좋아!",
+  choices:["Hi Emma!","I'm happy too!"], model:()=>"Hi Emma! I'm happy too!",
+  react:()=>"Yay! Let's talk about Dragon Masters!"},
+
+ {en:"Which Dragon Masters book did you read? Tell me the number!",
+  ko:"드래곤 마스터즈 몇 권 읽었어? 번호를 말해 줘!",
+  choices:["Book one","Book five","I don't know"], model:()=>"I read book five.",
+  react:t=>{
+    const nums={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+    let m=t.match(/\d+/); let n=m?+m[0]:null;
+    if(!n){for(const k in nums) if(new RegExp('\\b'+k+'\\b','i').test(t)) n=nums[k];}
+    if(n){state.book=n; buildBookSteps(); return `Book ${n}! Oh, you read book ${n}. Cool!`;}
+    return "That's okay! Let's just talk about dragons.";
+  }},
+
+ {en:"Which dragon do you like? Worm? Or another dragon?",
+  ko:"어떤 드래곤이 좋아? 웜? 아니면 다른 드래곤?",
+  choices:["Worm","Another dragon"], model:()=>"I like Worm.",
+  koModel:t=>/웜/.test(t)?"I like Worm.":null,
+  react:t=>{
+    const d=DRAGONS.find(x=>new RegExp(x,'i').test(t));
+    if(d){state.dragon=d; return `${d}! You like ${d}. Great choice!`;}
+    const w=clean(t).replace(/^i like\s*/i,'');
+    if(w && w.split(' ').length<=3){state.dragon=w; return `Oh, you like ${w}! Nice!`;}
+    return "Wow, nice! I like that dragon too.";
+  }},
+
+ {en:()=>`Why do you like ${state.dragon||'that dragon'}? Is it strong? Or is it kind?`,
+  ko:"왜 좋아? 힘이 세서? 아니면 착해서?",
+  choices:["It's strong.","It's kind.","It's cool."], model:()=>"It is strong.",
+  react:t=>{
+    const a=['strong','kind','cool','cute','funny','big','smart','brave'].find(x=>new RegExp(x,'i').test(t));
+    return a ? `It's ${a}! Yes, I think so too.` : pick(["Oh, I see!","That's a good reason!"]);
+  }},
+
+ {en:"What can your dragon do? Can it fly? Can it make fire?",
+  ko:"그 드래곤은 뭘 할 수 있어? 날 수 있어? 불을 뿜어?",
+  choices:["It can fly.","It has magic.","It can dig."], model:()=>"It can fly.",
+  react:t=>{
+    const m=clean(t).match(/can\s+(.+)/i);
+    if(m) return `It can ${m[1]}! That's amazing!`;
+    const v=['fly','dig','swim','fire','magic','glow'].find(x=>new RegExp(x,'i').test(t));
+    return v ? `Wow, ${v}! So cool!` : "Wow, that's amazing!";
+  }},
+
+ // 이 자리에 5권이면 학습세트 질문이 들어간다 (buildBookSteps)
+
+ {en:"Can you tell me the story? Start with 'First'.",
+  ko:"이야기 들려줄래? 'First'로 시작해 봐.",
+  choices:["First, …","Then, …","At the end, …"], chipsNoSpeak:true, multi:true,
+  model:()=>"First, Drake met a dragon. Then, …",
+  react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, friend!"},
+
+ {en:"If you had a dragon, what would you name it?",
+  ko:"너한테 드래곤이 있다면 이름을 뭐라고 지을래?",
+  choices:["I would name it Sparky.","I would name it Lulu."], model:()=>"I would name it Sparky.",
+  react:t=>{
+    const m=clean(t).match(/name it\s+(.+)/i); const n=m?m[1]:(clean(t).split(' ').length<=2?clean(t):null);
+    return n ? `${cap(n)}! What a lovely name!` : "What a lovely name!";
+  }},
+
+ {en:"That was so much fun, friend! See you next time. Bye bye!",
+  ko:"정말 재밌었어! 다음에 또 만나. 안녕!",
+  choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma! See you!", last:true,
+  react:()=>"Bye, friend!"}
+];
+
+// 5권(Song of the Poison Dragon) 질문 세트에서 쉬운 것만 — 줄거리 사실은 Emma가 말하지 않는다
+const BOOK5=[
+ {en:"What was the big problem in the story?", ko:"이 이야기에서 큰 문제가 뭐였어?",
+  choices:["The problem was …"], chipsNoSpeak:true, model:()=>"The problem was …",
+  react:()=>pick(["Oh no! That's a big problem.","Wow, that sounds hard!"])},
+ {en:"What is one thing that surprised you?", ko:"책에서 깜짝 놀란 거 하나만 말해 줘.",
+  choices:["I was surprised when …"], chipsNoSpeak:true, model:()=>"I was surprised when …",
+  react:()=>pick(["Really? That is surprising!","Wow, I didn't know that!"])}
+];
+let bookAdded=false;
+function buildBookSteps(){
+  if(state.series==='dm' && state.book===5 && !bookAdded){
+    const at=STEPS.findIndex(s=>s.multi); STEPS.splice(at,0,...BOOK5); bookAdded=true;
+  }
+}
+
+/* ---- The Boxcar Children — 인물(Henry·Jessie·Violet·Benny·강아지 Watch)만 쓰고, 권별 줄거리는 Emma가 말하지 않는다 ---- */
+const ALDENS={Henry:'he',Jessie:'she',Violet:'she',Benny:'he'};
+const KO_NAMES=[[/헨리/,'Henry'],[/제시/,'Jessie'],[/바이올렛|바올렛/,'Violet'],[/베니|벤니/,'Benny'],[/와치|워치/,'Watch']];
+const BOX_STEPS=[
+ {en:"Hi friend! It's me, Emma. I heard you are reading The Boxcar Children. I love that book!",
+  ko:"안녕! 나 Emma야. 너 박스카 칠드런 읽는다며? 나 그 책 정말 좋아해!",
+  choices:["Hi Emma!","Me too!"], model:()=>"Hi Emma! I love it too!",
+  react:()=>"Yay! Let's talk about the Alden children!"},
+
+ {en:"Which Boxcar Children book are you reading? Tell me the number!",
+  ko:"박스카 칠드런 몇 권 읽고 있어? 번호를 말해 줘!",
+  choices:["Book one","Book two","I don't know"], model:()=>"I am reading book one.",
+  react:t=>{
+    const nums={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+    let m=t.match(/\d+/); let n=m?+m[0]:null;
+    if(!n){for(const k in nums) if(new RegExp('\\b'+k+'\\b','i').test(t)) n=nums[k];}
+    if(n){state.book=n; return `Book ${n}! Cool!`;}
+    return "That's okay!";
+  }},
+
+ {en:"Who do you like the most? Henry? Jessie? Violet? Or Benny?",
+  ko:"누가 제일 좋아? 헨리? 제시? 바이올렛? 아니면 베니?",
+  choices:["Henry","Jessie","Violet","Benny"], model:()=>"I like Benny.",
+  koModel:t=>{const h=KO_NAMES.find(([re])=>re.test(t)); return h&&ALDENS[h[1]]?`I like ${h[1]}.`:null;},
+  react:t=>{
+    const n=Object.keys(ALDENS).find(x=>new RegExp(x,'i').test(t));
+    if(n){state.fav=n; return `${n}! You like ${n}. Me too!`;}
+    if(/watch|dog/i.test(t)){state.fav='Watch'; return "Watch the dog! Aww, I like Watch too!";}
+    return "Oh, nice!";
+  }},
+
+ {en:()=>{const n=state.fav; const p=n==='Watch'?'it':(ALDENS[n]||'they');
+          return `Why do you like ${n||'them'}? Is ${p} kind? Or smart? Or funny?`;},
+  ko:"왜 좋아? 착해서? 똑똑해서? 웃겨서?",
+  choices:()=>{const p=state.fav==='Watch'?'It':(ALDENS[state.fav]==='she'?'She':ALDENS[state.fav]==='he'?'He':'They'); const b=p==='They'?'are':'is';
+               return [`${p} ${b} kind.`,`${p} ${b} smart.`,`${p} ${b} funny.`];},
+  model:()=>"She is kind.",
+  react:t=>{
+    const a=['kind','smart','funny','brave','cute','nice','strong','helpful'].find(x=>new RegExp(x,'i').test(t));
+    return a ? `${cap(a)}! Yes, I think so too.` : pick(["Oh, I see!","That's a good reason!"]);
+  }},
+
+ {en:"In the first book, the children live in an old boxcar. Would you like to live in a boxcar? Yes or no?",
+  ko:"첫 권에서 아이들은 낡은 화물칸(박스카)에서 살아. 너도 박스카에서 살고 싶어? 예, 아니요?",
+  choices:["Yes, I would!","No, I wouldn't."], model:()=>"Yes, I would!",
+  react:t=>/\bno\b|not|wouldn/i.test(t) ? "No? Ha ha, me neither! I like my bed." : /yes|yeah|would/i.test(t) ? "Yes? Me too! It sounds like an adventure!" : "Hmm, interesting!"},
+
+ {en:"Is there a mystery in your book? What is the mystery?",
+  ko:"네 책에 수수께끼가 있어? 무슨 수수께끼야?",
+  choices:["The mystery is …","I don't know yet."], chipsNoSpeak:true, model:()=>"The mystery is …",
+  react:t=>/don'?t know|not yet/i.test(t) ? "That's okay! Tell me when you find out!" : pick(["Ooh, that's a good mystery!","Wow, I want to know the answer!"])},
+
+ {en:"Can you tell me the story? Start with 'First'.",
+  ko:"이야기 들려줄래? 'First'로 시작해 봐.",
+  choices:["First, …","Then, …","At the end, …"], chipsNoSpeak:true, multi:true,
+  model:()=>"First, the children … Then, …",
+  react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, friend!"},
+
+ {en:"If you had a dog like Watch, what would you do together?",
+  ko:"너한테 Watch 같은 강아지가 있다면 같이 뭐 할래?",
+  choices:["I would play with it.","I would take a walk."], model:()=>"I would play with it.",
+  react:t=>{ const m=clean(t).match(/would\s+(.+)/i); return m ? `You would ${m[1]}! That sounds so fun!` : "That sounds so fun!"; }},
+
+ {en:"That was so much fun, friend! See you next time. Bye bye!",
+  ko:"정말 재밌었어! 다음에 또 만나. 안녕!",
+  choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma! See you!", last:true,
+  react:()=>"Bye, friend!"}
+];
+
+/* ================= 어느 책에나 쓰는 질문 =================
+   follow: 첫 대답을 받은 뒤 "왜?"처럼 한 번 더 묻는다 → 10분 대화 */
+const GOOD=["I see!","That's a great idea!","Wow, cool!","I like that!","Oh, nice!"];
+const byeStep=()=>({en:"That was so much fun, friend! See you next time. Bye bye!",
+  ko:"정말 재밌었어! 다음에 또 만나. 안녕!",
+  choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma! See you!", last:true, react:()=>"Bye, friend!"});
+
+function commonQs({retell=true}={}){
+  return [
+   {en:"What was your favorite part of the book?", ko:"책에서 제일 좋았던 장면은 뭐야?",
+    choices:["My favorite part was …"], chipsNoSpeak:true, model:()=>"My favorite part was …",
+    react:()=>pick(["Ooh, that sounds fun!","Wow, I like that part too!","That sounds exciting!"]),
+    follow:"Why did you like that part?"},
+   {en:"How did you feel when you read it? Happy? Excited? Or scared?", ko:"읽을 때 기분이 어땠어? 기뻤어? 신났어? 무서웠어?",
+    choices:["I felt happy.","I felt excited.","I felt scared."], model:()=>"I felt excited.",
+    koModel:t=>{const f=[[/기뻐|기뻤|행복|좋았/,'happy'],[/신나|신났|재밌/,'excited'],[/무서/,'scared'],[/슬퍼|슬펐/,'sad'],[/놀라|놀랐/,'surprised']].find(([re])=>re.test(t)); return f?`I felt ${f[1]}.`:null;},
+    react:t=>{const f=['happy','excited','scared','sad','surprised','funny'].find(x=>new RegExp(x,'i').test(t)); return f?`You felt ${f}! I see.`:"I see!";},
+    follow:"Why did you feel that way?"},
+   ...(retell?[{en:"Can you tell me the story? Start with 'First'.", ko:"이야기 들려줄래? 'First'로 시작해 봐.",
+    choices:["First, …","Then, …","At the end, …"], chipsNoSpeak:true, multi:true, model:()=>"First, … Then, …",
+    react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, friend!"}]:[]),
+   {en:"If you were in the story, what would you do?", ko:"네가 이 이야기 속에 있다면 뭘 할래?",
+    choices:["I would …"], chipsNoSpeak:true, model:()=>"I would help them.",
+    react:t=>{const m=clean(t).match(/would\s+(.+)/i); return m?`You would ${m[1]}! Great idea!`:"Great idea!";},
+    follow:"Tell me more!"},
+   {en:"Would you tell a friend to read this book? Yes or no?", ko:"친구한테 이 책 읽어 보라고 할래? 예, 아니요?",
+    choices:["Yes, I would!","No, I wouldn't."], model:()=>"Yes, I would!",
+    react:t=>/\bno\b|not|wouldn/i.test(t)?"No? Okay!":"Yes? Me too!",
+    follow:"Why?"},
+   byeStep()
+  ];
+}
+
+function helloStep(title){
+  return {en:`Hi friend! It's me, Emma. I heard you are reading ${title}. Let's talk about it!`,
+    ko:`안녕! 나 Emma야. 너 ${title} 읽는다며? 그 책 이야기 하자!`,
+    choices:["Hi Emma!","Okay!"], model:()=>"Hi Emma! Okay!", react:()=>"Yay! I'm so excited!"};
+}
+function numberStep(title){
+  return {en:`Which ${title} book are you reading? Tell me the number!`, ko:"몇 권 읽고 있어? 번호를 말해 줘!",
+    choices:["Book one","Book two","I don't know"], model:()=>"I am reading book one.",
+    react:t=>{
+      const nums={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+      let m=t.match(/\d+/); let n=m?+m[0]:null;
+      if(!n){for(const k in nums) if(new RegExp('\\b'+k+'\\b','i').test(t)) n=nums[k];}
+      if(n){state.book=n; return `Book ${n}! Cool!`;}
+      return "That's okay!";
+    }};
+}
+// 인물 고르기 + 왜 좋아? (pron: 이름 → he/she/it)
+function charSteps(pron, koMap){
+  const names=Object.keys(pron);
+  const list=names.slice(0,-1).join('? ')+'? Or '+names[names.length-1]+'?';
+  return [
+   {en:`Who do you like the most? ${list}`, ko:"누가 제일 좋아?",
+    choices:names, model:()=>`I like ${names[0]}.`,
+    koModel:t=>{const h=koMap.find(([re])=>re.test(t)); return h?`I like ${h[1]}.`:null;},
+    react:t=>{
+      const n=names.find(x=>new RegExp(x.replace('.','\\.?'),'i').test(t));
+      if(n){state.fav=n; return `${n}! You like ${n.replace(/\.$/,'')}. Me too!`;}
+      return "Oh, nice!";
+    }},
+   {en:()=>{const n=state.fav; const p=pron[n]||'they'; return `Why do you like ${n||'them'}? ${p==='they'?'Are':'Is'} ${p} kind? Or funny? Or brave?`;},
+    ko:"왜 좋아? 착해서? 웃겨서? 용감해서?",
+    choices:()=>{const p=pron[state.fav]||'they'; const P=cap(p), b=p==='they'?'are':'is'; return [`${P} ${b} kind.`,`${P} ${b} funny.`,`${P} ${b} brave.`];},
+    model:()=>"She is funny.",
+    react:t=>{const a=['kind','smart','funny','brave','cute','nice','strong','cool'].find(x=>new RegExp(x,'i').test(t)); return a?`${cap(a)}! Yes, I think so too.`:pick(["Oh, I see!","That's a good reason!"]);},
+    follow:()=>`What else do you like about ${{he:'him',she:'her',it:'it'}[pron[state.fav]]||'them'}?`}
+  ];
+}
+
+/* ---- Magic Tree House — Jack·Annie·Morgan, 나무 집이 책 속 장소로 데려간다는 설정만 ---- */
+const MTH_STEPS=()=>[
+  helloStep("Magic Tree House"), numberStep("Magic Tree House"),
+  ...charSteps({Jack:'he',Annie:'she',Morgan:'she'},[[/잭/,'Jack'],[/애니|에니/,'Annie'],[/모건|모간/,'Morgan']]),
+  {en:"Where did Jack and Annie go in your book?", ko:"네 책에서 잭이랑 애니는 어디에 갔어?",
+   choices:["They went to …"], chipsNoSpeak:true, model:()=>"They went to …",
+   react:()=>pick(["Wow, what a trip!","Ooh, that sounds amazing!"]), follow:"Would you like to go there too?"},
+  {en:"Jack loves books and notes. Annie is brave. Are you more like Jack? Or Annie?", ko:"잭은 책이랑 메모를 좋아하고, 애니는 용감해. 너는 잭이랑 더 닮았어? 애니랑 더 닮았어?",
+   choices:["I am like Jack.","I am like Annie."], model:()=>"I am like Annie.",
+   koModel:t=>/잭/.test(t)?"I am like Jack.":/애니/.test(t)?"I am like Annie.":null,
+   react:t=>/jack/i.test(t)?"Like Jack! Smart and careful!":/annie/i.test(t)?"Like Annie! Brave and fun!":"Oh, interesting!", follow:"Why?"},
+  {en:"If you had a magic tree house, where would you go?", ko:"너한테 마법 나무 집이 있다면 어디에 가고 싶어?",
+   choices:["I would go to …"], chipsNoSpeak:true, model:()=>"I would go to the ocean.",
+   react:t=>{const m=clean(t).match(/go to\s+(.+)/i); return m?`${cap(m[1])}! Take me with you!`:"Take me with you!";}, follow:"What would you do there?"},
+  ...commonQs()
+];
+
+/* ---- Junie B. Jones — Junie B.·친구 Lucille·Grace, 학교 이야기 ---- */
+const JBJ_STEPS=()=>[
+  helloStep("Junie B. Jones"), numberStep("Junie B. Jones"),
+  ...charSteps({'Junie B.':'she',Lucille:'she',Grace:'she'},[[/주니/,'Junie B.'],[/루실/,'Lucille'],[/그레이스/,'Grace']]),
+  {en:"Junie B. is so funny! What funny thing did she do in your book?", ko:"주니 비는 정말 웃겨! 네 책에서 무슨 웃긴 일을 했어?",
+   choices:["She …"], chipsNoSpeak:true, model:()=>"She …",
+   react:()=>pick(["Ha ha ha! That's so funny!","Oh no, Junie B.! Ha ha!"]), follow:"Did you laugh?"},
+  {en:"Junie B. says what she thinks. Is that good? Or not so good?", ko:"주니 비는 생각나는 대로 다 말해. 그게 좋은 걸까? 별로일까?",
+   choices:["It is good.","It is not so good."], model:()=>"It is good.",
+   react:t=>/not/i.test(t)?"Hmm, sometimes it is not so good. I agree!":"Yes, she is honest!", follow:"Why do you think so?"},
+  {en:"What is the most fun thing at your school?", ko:"너희 학교에서 제일 재밌는 건 뭐야?",
+   choices:["Lunch time!","Recess!","Art class!"], model:()=>"Recess is the most fun!",
+   react:t=>{const w=clean(t); return w.split(' ').length<=4?`${cap(w)}! Fun!`:"That sounds fun!";}, follow:"What do you do then?"},
+  ...commonQs()
+];
+
+/* ---- Mercy Watson — 버터 토스트를 좋아하는 돼지, Mr.·Mrs. Watson, 이웃 Eugenia ---- */
+const MW_STEPS=()=>[
+  helloStep("Mercy Watson"), numberStep("Mercy Watson"),
+  ...charSteps({Mercy:'she','Mr. Watson':'he','Mrs. Watson':'she',Eugenia:'she'},[[/머시|머씨/,'Mercy'],[/미스터|아저씨/,'Mr. Watson'],[/미세스|아줌마/,'Mrs. Watson'],[/유지니아|유제니아/,'Eugenia']]),
+  {en:"Mercy loves hot buttered toast! Do you like toast? Yes or no?", ko:"머시는 따뜻한 버터 토스트를 정말 좋아해! 너도 토스트 좋아해?",
+   choices:["Yes, I do!","No, I don't."], model:()=>"Yes, I do!",
+   react:t=>/\bno\b|don'?t/i.test(t)?"No? Okay!":"Yum! Me too!", follow:"What food do you love the most?"},
+  {en:"Mercy is a pig, but she lives in a house! Would you like a pet pig? Yes or no?", ko:"머시는 돼지인데 집에서 살아! 너도 돼지를 키우고 싶어?",
+   choices:["Yes!","No!"], model:()=>"Yes, I would!",
+   react:t=>/\bno\b/i.test(t)?"Ha ha, no pig for you!":"A pet pig! So cute!", follow:"What would you name it?"},
+  ...commonQs()
+];
+
+/* ---- ORT — Biff·Chip·Kipper·Floppy·마법 열쇠, 마지막 장 질문 활용 ---- */
+const ORT_STEPS=()=>[
+  helloStep("Oxford Reading Tree"),
+  {en:"What is the name of your book?", ko:"오늘 읽은 ORT 책 제목이 뭐야?",
+   choices:["It is …"], chipsNoSpeak:true, model:()=>"It is …",
+   react:t=>{state.title=clean(t); return "Ooh, I like that title!";}},
+  ...charSteps({Kipper:'he',Biff:'she',Chip:'he',Floppy:'it'},[[/키퍼/,'Kipper'],[/비프/,'Biff'],[/칩/,'Chip'],[/플로피/,'Floppy']]),
+  {en:"Look at the last page of your book. Is there a question? Read it to me!", ko:"책 마지막 장을 봐. 질문이 있어? 나한테 읽어 줘!",
+   choices:["The question is …"], chipsNoSpeak:true, model:()=>"The question is …",
+   react:()=>"Good question!", follow:"What is your answer?"},
+  {en:"The magic key glows! Where would you like to go with the magic key?", ko:"마법 열쇠가 반짝! 마법 열쇠로 어디에 가고 싶어?",
+   choices:["I would go to …"], chipsNoSpeak:true, model:()=>"I would go to a castle.",
+   react:t=>{const m=clean(t).match(/go to\s+(.+)/i); return m?`${cap(m[1])}! What an adventure!`:"What an adventure!";}, follow:"Who would you take with you?"},
+  ...commonQs()
+];
+
+/* ---- 다른 책 — 제목만 적으면 어느 책에나 맞는 질문으로 ---- */
+const OTHER_STEPS=()=>[
+  helloStep(state.title||"a new book"),
+  {en:"Who is the main character?", ko:"주인공은 누구야?",
+   choices:["The main character is …"], chipsNoSpeak:true, model:()=>"The main character is …",
+   react:t=>{const m=clean(t).match(/character is\s+(.+)/i); return m?`${cap(m[1])}! Nice!`:"Oh, nice!";}, follow:"Do you like the main character? Why?"},
+  {en:"Where does the story happen? At a school? In a house? Or somewhere else?", ko:"이야기는 어디에서 일어나? 학교? 집? 다른 곳?",
+   choices:["At a school.","In a house.","In a forest."], model:()=>"It happens at a school.",
+   react:()=>"Oh, I see!", follow:"Would you like to go there?"},
+  {en:"Was there a problem in the story?", ko:"이야기 속에 문제가 있었어?",
+   choices:["The problem was …","No problem."], chipsNoSpeak:true, model:()=>"The problem was …",
+   react:t=>/no problem/i.test(t)?"No problem? Okay!":"Oh no! That's a big problem.", follow:"How did they fix it?"},
+  ...commonQs()
+];
+
+const SERIES={
+  box:{name:"The Boxcar Children", e:"🚃", ko:"박스카 칠드런", steps:()=>[...BOX_STEPS.slice(0,6), BOX_STEPS[7], ...commonQs()]},
+  mth:{name:"Magic Tree House", e:"🌳", ko:"매직 트리 하우스", steps:MTH_STEPS},
+  jbj:{name:"Junie B. Jones", e:"🎒", ko:"주니 비 존스", steps:JBJ_STEPS},
+  mw:{name:"Mercy Watson", e:"🐷", ko:"머시 왓슨", steps:MW_STEPS},
+  ort:{name:"Oxford Reading Tree", e:"🔑", ko:"ORT", steps:ORT_STEPS},
+  dm:{name:"Dragon Masters", e:"🐉", ko:"드래곤 마스터즈", steps:()=>[...DM_STEPS.slice(0,5), DM_STEPS[6], ...commonQs()]},
+  other:{name:"다른 책", e:"📖", ko:"제목 적기", steps:OTHER_STEPS}
+};
+let series='box', otherTitle='';
+try{ series=localStorage.getItem('emmaSeries')||'box'; otherTitle=localStorage.getItem('emmaOtherTitle')||''; }catch(e){}
+if(!SERIES[series]) series='box';
+function renderBooks(){
+  const box=$('books'); box.innerHTML='';
+  for(const k in SERIES){
+    const b=document.createElement('button'); b.className='bk'+(k===series?' on':'');
+    b.innerHTML=`<span class="e">${SERIES[k].e}</span>${SERIES[k].name}<br><small style="opacity:.7">${SERIES[k].ko}</small>`;
+    b.onclick=()=>{series=k; try{localStorage.setItem('emmaSeries',k);}catch(e){} renderBooks(); if(k==='other') $('otherTitle').focus();};
+    box.appendChild(b);
+  }
+  $('otherRow').classList.toggle('hidden',series!=='other');
+  $('otherTitle').value=otherTitle;
+}
+
+/* ---------------- 진행 ---------------- */
+let i=0, turn=0, log=[], t0=0, tick=null, lastLine='', rec=null, listening=false;
+const $=id=>document.getElementById(id);
+const txt=v=>typeof v==='function'?v():v;
+
+function show(id){['start','dress','talk','end'].forEach(s=>$(s).classList.toggle('hidden',s!==id));}
+
+async function emmaSays(line){
+  lastLine=line; $('en').textContent=line;
+  log.push({who:'Emma',text:line});
+  await say(line);
+}
+
+async function renderStep(){
+  const s=STEPS[i]; turn=0;
+  $('me').classList.add('hidden'); $('ko').classList.add('hidden'); $('showko').textContent='뜻 보기';
+  $('ko').textContent=s.ko;
+  const c=$('choices'); c.innerHTML='';
+  txt(s.choices).forEach(ch=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=ch;
+    b.onclick=()=>{ if(!s.chipsNoSpeak) say(ch,0.85); else say(ch.replace('…','').trim(),0.85); };
+    c.appendChild(b);
+  });
+  $('chiphint').classList.toggle('hidden',!txt(s.choices).length);
+  $('next').textContent = s.last ? '끝내기 🎉' : '다음 →';
+  await emmaSays(txt(s.en));
+}
+
+function meSaid(text,isKo){
+  $('said').textContent=text; $('said').classList.toggle('ko',!!isKo);
+  $('me').classList.remove('hidden');
+  log.push({who:'나',text,ko:!!isKo});
+}
+
+async function answer(text){
+  const s=STEPS[i];
+  const isKo=/[가-힣]/.test(text);
+  meSaid(text,isKo);
+  if(isKo){
+    const model=(s.koModel&&s.koModel(text))||s.model();
+    if(/모르|몰라/.test(text)) { await emmaSays("That's okay! You can pick one. "+txt(s.choices).filter(c=>!c.includes('…')).join(' Or ')+"?"); return; }
+    await emmaSays(`Oh, you said it in Korean. That's okay! In English, we say: "${model}" Can you say it with me?`);
+    return;
+  }
+  let r = (s.follow && !s.multi && turn>=1) ? pick(GOOD) : s.react(text,turn);
+  turn++;
+  if(s.follow && turn===1) r+=' '+txt(s.follow);
+  await emmaSays(r);
+  if(s.last) setTimeout(finish,1200);
+}
+
+/* ---------------- 마이크 ---------------- */
+// 페이지가 마이크를 못 쓰는 곳(태블릿·비공개 주소 페이지 등) → 키보드 받아쓰기 칸으로 바꾼다
+let micOff=false;
+function micBlocked(){
+  if(listening){ listening=false; Emma.listen(false); $('mic').classList.remove('on'); }
+  micOff=true;
+  $('mic').classList.add('hidden'); $('micko').classList.add('hidden');
+  $('miclabel').innerHTML='여기서는 화면 마이크가 막혀 있어요.<br>아래 칸을 누르고 <b>키보드의 🎤 버튼</b>으로 말해 봐!';
+  const d=document.querySelector('.mom'); d.open=true; d.classList.add('kbd');
+  d.querySelector('summary').textContent='✍️ 키보드 마이크로 말하기';
+  $('typed').placeholder='여기를 누르고 키보드 🎤 → 말하기 → 보내기';
+  $('send').textContent='보내기 ➜';
+  $('me').classList.add('hidden');
+}
+function listen(lang){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ micBlocked(); return; }
+  if(listening){ rec&&rec.stop(); return; }
+  speechSynthesis.cancel();
+  rec=new SR(); rec.lang=lang; rec.interimResults=true; rec.maxAlternatives=1;
+  let final='', blocked=false;
+  rec.onresult=e=>{ let t=''; for(const r of e.results) t+=r[0].transcript; final=t; $('said').textContent=t; $('me').classList.remove('hidden'); };
+  rec.onerror=e=>{ if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){ blocked=true; micBlocked(); } };
+  rec.onend=()=>{
+    if(blocked||micOff) return;
+    listening=false; Emma.listen(false); $('mic').classList.remove('on'); $('miclabel').textContent='눌러서 영어로 말해 봐';
+    if(final.trim()) answer(final.trim());
+    else { $('me').classList.add('hidden'); $('miclabel').textContent='잘 안 들렸어 — 다시 눌러 보거나, 위 답을 눌러 따라 해 봐'; }
+  };
+  try{ rec.start(); }catch(err){ micBlocked(); return; }
+  listening=true; Emma.listen(true);
+  $('mic').classList.add('on'); $('miclabel').textContent= lang==='ko-KR' ? '한국어로 말해 봐… (다 하면 멈춰)' : '듣고 있어… 천천히 말해 봐';
+}
+
+/* ---------------- 시간·마무리 ---------------- */
+function startTimer(){
+  t0=Date.now(); clearInterval(tick);
+  tick=setInterval(()=>{
+    const m=Math.floor((Date.now()-t0)/60000), s=Math.floor((Date.now()-t0)/1000)%60;
+    $('timer').textContent=`${m}:${String(s).padStart(2,'0')}`;
+    if(m>=10) $('timer').textContent+=' · 이제 인사하고 마칠까?';
+  },1000);
+}
+const PRAISE=[
+ "Emma 질문에 끝까지 대답했어.<br>한국어로 말한 것도, 한 단어로 말한 것도 다 대화야 👏",
+ "먼저 말을 꺼냈지!<br>그게 제일 어려운 거야. 정말 멋졌어 🌱",
+ "Emma를 따라 영어로 말해 봤어.<br>귀랑 입이 같이 자라고 있어 💛"
+];
+function finish(){
+  clearInterval(tick); speechSynthesis.cancel();
+  const mins=Math.max(1,Math.round((Date.now()-t0)/60000));
+  $('praise').innerHTML=pick(PRAISE);
+  $('log').innerHTML=log.map(l=>`<div class="${l.who==='나'?'n':''}"><b>${l.who}</b> ${l.text.replace(/</g,'&lt;')}</div>`).join('');
+  const record={date:new Date().toISOString().slice(0,10),mins,series:state.series==='other'?state.title:SERIES[state.series].name,book:state.book,fav:state.fav||state.dragon||null,log};
+  try{ const all=JSON.parse(localStorage.getItem('emmaLogs')||'[]'); all.push(record); localStorage.setItem('emmaLogs',JSON.stringify(all)); }catch(e){}
+  window._record=record;
+  show('end');
+}
+function recordText(r){
+  return `[Emma 대화 기록 ${r.date} · ${r.mins}분 · ${r.series} ${r.book?('#'+r.book):'(권 모름)'} · 좋아하는 인물 ${r.fav||'모름'}]\n`+
+    r.log.map(l=>`${l.who}: ${l.text}${l.ko?' (한국어)':''}`).join('\n');
+}
+
+/* ---------------- 버튼 ---------------- */
+$('go').onclick=async()=>{
+  $('go').textContent='목소리 준비 중…';
+  await loadVoice(); showVoice();
+  if(series==='other'){
+    otherTitle=$('otherTitle').value.trim();
+    if(!otherTitle){ $('go').textContent='▶ 시작하기'; $('otherTitle').focus(); $('otherTitle').placeholder='책 제목을 먼저 적어 줘!'; return; }
+    try{ localStorage.setItem('emmaOtherTitle',otherTitle); }catch(e){}
+  }
+  state={book:null,series,title:series==='other'?otherTitle:null};
+  STEPS=SERIES[series].steps(); bookAdded=false;
+  $('booktag').textContent=series==='other'?otherTitle:SERIES[series].name;
+  i=0; log=[]; startTimer(); show('talk'); renderStep();
+  $('go').textContent='▶ 시작하기';
+};
+$('again').onclick=()=>say(lastLine);
+$('slow').onclick=()=>say(lastLine,0.7);
+$('showko').onclick=()=>{const h=$('ko').classList.toggle('hidden'); $('showko').textContent=h?'뜻 보기':'뜻 숨기기';};
+$('mic').onclick=()=>listen('en-US');
+$('micko').onclick=()=>listen('ko-KR');
+$('next').onclick=()=>{ if(rec&&listening) rec.stop(); if(STEPS[i].last){finish();return;} i=Math.min(i+1,STEPS.length-1); renderStep(); };
+$('send').onclick=()=>{const v=$('typed').value.trim(); if(v){$('typed').value=''; answer(v);}};
+$('typed').onkeydown=e=>{ if(e.key==='Enter') $('send').click(); };
+$('copy').onclick=async()=>{ try{ await navigator.clipboard.writeText(recordText(window._record)); $('copy').textContent='✅ 복사했어요 — 나도 창에 붙여 주세요'; }catch(e){ $('copy').textContent='복사 실패 — 화면 기록을 보여 주세요'; } };
+renderBooks();
+/* ---- 꾸미기 화면 ---- */
+function renderOpts(){
+  const box=$('opts'); box.innerHTML='';
+  for(const key in LOOK_OPTIONS){
+    const o=LOOK_OPTIONS[key];
+    const wrap=document.createElement('div'); wrap.className='opt';
+    wrap.innerHTML=`<div class="lb">${o.label}</div>`;
+    const its=document.createElement('div'); its.className='its';
+    o.items.forEach(([val,name])=>{
+      const b=document.createElement('button');
+      if(o.swatch){ b.className='sw'+(LOOK[key]===val?' on':''); b.style.background=val; b.title=name; }
+      else { b.className='it'+(LOOK[key]===val?' on':''); b.textContent=name; }
+      b.onclick=()=>{ LOOK[key]=val; saveLook(); };
+      its.appendChild(b);
+    });
+    wrap.appendChild(its); box.appendChild(wrap);
+  }
+}
+function saveLook(){
+  try{ localStorage.setItem('emmaLook',JSON.stringify(LOOK)); }catch(e){}
+  Emma.redraw(); renderOpts();
+}
+$('dressBtn').onclick=()=>{ renderOpts(); show('dress'); };
+$('rand').onclick=()=>{ for(const k in LOOK_OPTIONS){ LOOK[k]=pick(LOOK_OPTIONS[k].items)[0]; } saveLook(); };
+$('reset').onclick=()=>{ LOOK={...DEFAULT_LOOK}; saveLook(); };
+$('dressDone').onclick=async()=>{
+  show('start');
+  await loadVoice();
+  say("Wow! I love my new look! Thank you, friend!");
+};
+
+$('home').onclick=()=>{ $('copy').textContent='📋 나도에게 줄 기록 복사'; $('timer').textContent=''; show('start'); };
+</script>
+</body>
+</html>
