@@ -117,7 +117,7 @@
   <section id="start" class="box start">
     <div class="avatar" id="avStart"></div>
     <h1>Emma 만나기</h1>
-    <p>나의 영어 책 친구 · 10분만 가볍게</p>
+    <p>나율이의 영어 책 친구 · 10분만 가볍게</p>
     <div class="books" id="books"></div>
     <div class="otherrow hidden" id="otherRow"><input id="otherTitle" placeholder="읽은 책 제목을 적어 줘 (영어로)"></div>
     <button class="big" id="go">▶ 시작하기</button>
@@ -170,7 +170,7 @@
     <details class="mom">
       <summary>엄마가 대신 적기 (마이크가 안 될 때)</summary>
       <div class="in">
-        <input id="typed" placeholder="내가 한 말 (한국어·영어 모두 OK)">
+        <input id="typed" placeholder="나율이가 한 말 (한국어·영어 모두 OK)">
         <button id="send">보내기</button>
       </div>
     </details>
@@ -192,7 +192,7 @@
 
 <script>
 /* ---------------- 움직이는 Emma (말하면 입이 움직이고, 눈을 깜빡이고, 들을 때 고개를 기울인다) ---------------- */
-/* ---- Emma 꾸미기: 내가 고른 모습(localStorage 'emmaLook') ---- */
+/* ---- Emma 꾸미기: 나율이가 고른 모습(localStorage 'emmaLook') ---- */
 const LOOK_OPTIONS={
   hair:{label:'머리 모양', items:[['pigtails','양갈래'],['long','긴 머리'],['bob','단발'],['ponytail','포니테일'],['buns','똥머리 두 개'],['short','짧은 머리']]},
   hairColor:{label:'머리색', swatch:true, items:[['#e3a653','금발'],['#7a4a25','갈색'],['#2b2220','검정'],['#c8552b','빨강'],['#ff8fc7','분홍'],['#9b6be0','보라'],['#5fb6e8','하늘']]},
@@ -365,8 +365,8 @@ let state={book:null};
 
 let STEPS=[];
 const DM_STEPS=[
- {en:"Hi again, friend! It's me, Emma. I'm so happy to talk with you!",
-  ko:"다시 만나서 반가워! 나 Emma야. 너랑 얘기해서 너무 좋아!",
+ {en:"Hi again, Nayul! It's me, Emma. I'm so happy to talk with you!",
+  ko:"다시 만나서 반가워, 나율! 나 Emma야. 너랑 얘기해서 너무 좋아!",
   choices:["Hi Emma!","I'm happy too!"], model:()=>"Hi Emma! I'm happy too!",
   react:()=>"Yay! Let's talk about Dragon Masters!"},
 
@@ -417,7 +417,7 @@ const DM_STEPS=[
   ko:"이야기 들려줄래? 'First'로 시작해 봐.",
   choices:["First, …","Then, …","At the end, …"], chipsNoSpeak:true, multi:true,
   model:()=>"First, Drake met a dragon. Then, …",
-  react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, friend!"},
+  react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, Nayul!"},
 
  {en:"If you had a dragon, what would you name it?",
   ko:"너한테 드래곤이 있다면 이름을 뭐라고 지을래?",
@@ -427,10 +427,10 @@ const DM_STEPS=[
     return n ? `${cap(n)}! What a lovely name!` : "What a lovely name!";
   }},
 
- {en:"That was so much fun, friend! See you next time. Bye bye!",
-  ko:"정말 재밌었어! 다음에 또 만나. 안녕!",
+ {en:"That was so much fun, Nayul! See you next time. Bye bye!",
+  ko:"정말 재밌었어, 나율! 다음에 또 만나. 안녕!",
   choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma! See you!", last:true,
-  react:()=>"Bye, friend!"}
+  react:()=>"Bye, Nayul!"}
 ];
 
 // 5권(Song of the Poison Dragon) 질문 세트에서 쉬운 것만 — 줄거리 사실은 Emma가 말하지 않는다
@@ -453,8 +453,8 @@ function buildBookSteps(){
 const ALDENS={Henry:'he',Jessie:'she',Violet:'she',Benny:'he'};
 const KO_NAMES=[[/헨리/,'Henry'],[/제시/,'Jessie'],[/바이올렛|바올렛/,'Violet'],[/베니|벤니/,'Benny'],[/와치|워치/,'Watch']];
 const BOX_STEPS=[
- {en:"Hi friend! It's me, Emma. I heard you are reading The Boxcar Children. I love that book!",
-  ko:"안녕! 나 Emma야. 너 박스카 칠드런 읽는다며? 나 그 책 정말 좋아해!",
+ {en:"Hi Nayul! It's me, Emma. I heard you are reading The Boxcar Children. I love that book!",
+  ko:"안녕 나율! 나 Emma야. 너 박스카 칠드런 읽는다며? 나 그 책 정말 좋아해!",
   choices:["Hi Emma!","Me too!"], model:()=>"Hi Emma! I love it too!",
   react:()=>"Yay! Let's talk about the Alden children!"},
 
@@ -505,25 +505,25 @@ const BOX_STEPS=[
   ko:"이야기 들려줄래? 'First'로 시작해 봐.",
   choices:["First, …","Then, …","At the end, …"], chipsNoSpeak:true, multi:true,
   model:()=>"First, the children … Then, …",
-  react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, friend!"},
+  react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, Nayul!"},
 
  {en:"If you had a dog like Watch, what would you do together?",
   ko:"너한테 Watch 같은 강아지가 있다면 같이 뭐 할래?",
   choices:["I would play with it.","I would take a walk."], model:()=>"I would play with it.",
   react:t=>{ const m=clean(t).match(/would\s+(.+)/i); return m ? `You would ${m[1]}! That sounds so fun!` : "That sounds so fun!"; }},
 
- {en:"That was so much fun, friend! See you next time. Bye bye!",
-  ko:"정말 재밌었어! 다음에 또 만나. 안녕!",
+ {en:"That was so much fun, Nayul! See you next time. Bye bye!",
+  ko:"정말 재밌었어, 나율! 다음에 또 만나. 안녕!",
   choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma! See you!", last:true,
-  react:()=>"Bye, friend!"}
+  react:()=>"Bye, Nayul!"}
 ];
 
 /* ================= 어느 책에나 쓰는 질문 =================
    follow: 첫 대답을 받은 뒤 "왜?"처럼 한 번 더 묻는다 → 10분 대화 */
 const GOOD=["I see!","That's a great idea!","Wow, cool!","I like that!","Oh, nice!"];
-const byeStep=()=>({en:"That was so much fun, friend! See you next time. Bye bye!",
-  ko:"정말 재밌었어! 다음에 또 만나. 안녕!",
-  choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma! See you!", last:true, react:()=>"Bye, friend!"});
+const byeStep=()=>({en:"That was so much fun, Nayul! See you next time. Bye bye!",
+  ko:"정말 재밌었어, 나율! 다음에 또 만나. 안녕!",
+  choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma! See you!", last:true, react:()=>"Bye, Nayul!"});
 
 function commonQs({retell=true}={}){
   return [
@@ -538,7 +538,7 @@ function commonQs({retell=true}={}){
     follow:"Why did you feel that way?"},
    ...(retell?[{en:"Can you tell me the story? Start with 'First'.", ko:"이야기 들려줄래? 'First'로 시작해 봐.",
     choices:["First, …","Then, …","At the end, …"], chipsNoSpeak:true, multi:true, model:()=>"First, … Then, …",
-    react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, friend!"}]:[]),
+    react:(t,turn)=>turn<2 ? pick(["Wow! And then what happened?","Oh no! Then what?","Really? What happened next?"]) : "What a great story! Thank you, Nayul!"}]:[]),
    {en:"If you were in the story, what would you do?", ko:"네가 이 이야기 속에 있다면 뭘 할래?",
     choices:["I would …"], chipsNoSpeak:true, model:()=>"I would help them.",
     react:t=>{const m=clean(t).match(/would\s+(.+)/i); return m?`You would ${m[1]}! Great idea!`:"Great idea!";},
@@ -552,8 +552,8 @@ function commonQs({retell=true}={}){
 }
 
 function helloStep(title){
-  return {en:`Hi friend! It's me, Emma. I heard you are reading ${title}. Let's talk about it!`,
-    ko:`안녕! 나 Emma야. 너 ${title} 읽는다며? 그 책 이야기 하자!`,
+  return {en:`Hi Nayul! It's me, Emma. I heard you are reading ${title}. Let's talk about it!`,
+    ko:`안녕 나율! 나 Emma야. 너 ${title} 읽는다며? 그 책 이야기 하자!`,
     choices:["Hi Emma!","Okay!"], model:()=>"Hi Emma! Okay!", react:()=>"Yay! I'm so excited!"};
 }
 function numberStep(title){
@@ -721,7 +721,7 @@ async function renderStep(){
 function meSaid(text,isKo){
   $('said').textContent=text; $('said').classList.toggle('ko',!!isKo);
   $('me').classList.remove('hidden');
-  log.push({who:'나',text,ko:!!isKo});
+  log.push({who:'나율',text,ko:!!isKo});
 }
 
 async function answer(text){
@@ -793,7 +793,7 @@ function finish(){
   clearInterval(tick); speechSynthesis.cancel();
   const mins=Math.max(1,Math.round((Date.now()-t0)/60000));
   $('praise').innerHTML=pick(PRAISE);
-  $('log').innerHTML=log.map(l=>`<div class="${l.who==='나'?'n':''}"><b>${l.who}</b> ${l.text.replace(/</g,'&lt;')}</div>`).join('');
+  $('log').innerHTML=log.map(l=>`<div class="${l.who==='나율'?'n':''}"><b>${l.who}</b> ${l.text.replace(/</g,'&lt;')}</div>`).join('');
   const record={date:new Date().toISOString().slice(0,10),mins,series:state.series==='other'?state.title:SERIES[state.series].name,book:state.book,fav:state.fav||state.dragon||null,log};
   try{ const all=JSON.parse(localStorage.getItem('emmaLogs')||'[]'); all.push(record); localStorage.setItem('emmaLogs',JSON.stringify(all)); }catch(e){}
   window._record=record;
@@ -857,7 +857,7 @@ $('reset').onclick=()=>{ LOOK={...DEFAULT_LOOK}; saveLook(); };
 $('dressDone').onclick=async()=>{
   show('start');
   await loadVoice();
-  say("Wow! I love my new look! Thank you, friend!");
+  say("Wow! I love my new look! Thank you, Nayul!");
 };
 
 $('home').onclick=()=>{ $('copy').textContent='📋 나도에게 줄 기록 복사'; $('timer').textContent=''; show('start'); };
