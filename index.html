@@ -103,6 +103,43 @@
   .log{text-align:left;background:rgba(0,0,0,.18);border-radius:16px;padding:14px 18px;font-size:15px;line-height:1.7;max-height:36vh;overflow:auto}
   .log .n{color:var(--sky)}
   footer{text-align:center;font-size:12px;color:var(--soft);padding:0 0 10px}
+
+  /* 🗣 영어회화 모드 */
+  .modes{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0 0 16px}
+  .md{font-size:18px;font-weight:800;border:3px solid rgba(253,247,230,.3);background:rgba(255,255,255,.06);
+      color:var(--cream);border-radius:18px;padding:12px 18px;cursor:pointer;font-family:inherit;min-width:150px}
+  .md small{display:block;font-size:12px;font-weight:600;color:var(--soft);margin-top:3px}
+  .md.on{border-color:var(--gold);background:rgba(244,197,66,.22)}
+  .md:hover{border-color:var(--gold)}
+
+  /* 🎧 음원 듣기 */
+  .lsthead{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .crumb{flex:1;min-width:0;font-size:15px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lstbox{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;padding-right:4px}
+  .lstitem{display:flex;align-items:center;gap:10px;text-align:left;font-size:17px;font-weight:700;
+           border:2px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:inherit;
+           border-radius:14px;padding:12px 14px;cursor:pointer;font-family:inherit;width:100%}
+  .lstitem:hover{border-color:var(--gold)}
+  .lstitem .ic{font-size:22px;flex:0 0 auto}
+  .lstitem .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lstitem .mn{font-size:13px;opacity:.6;flex:0 0 auto}
+  .lstitem.playing{border-color:var(--gold);background:rgba(244,197,66,.18)}
+  .player{background:rgba(0,0,0,.25);border-radius:18px;padding:14px 16px;margin-bottom:14px}
+  .player .ttl{font-size:16px;font-weight:800;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pbar{width:100%;height:8px;border-radius:999px;background:rgba(255,255,255,.18);cursor:pointer;overflow:hidden}
+  .pbar i{display:block;height:100%;width:0;background:var(--gold)}
+  .ptime{display:flex;justify-content:space-between;font-size:13px;opacity:.7;margin-top:6px}
+  .pctl{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .pbtn{font-size:18px;border:0;border-radius:999px;padding:10px 16px;background:rgba(255,255,255,.16);
+        color:inherit;cursor:pointer;font-family:inherit;font-weight:700}
+  .pbtn.big{font-size:26px;padding:10px 22px;background:var(--gold);color:#3a2a00}
+  .pbtn.on{background:var(--gold);color:#3a2a00}
+  /* 🎧 듣기 화면에서 쓰는 것들 (Emma에 없던 클래스) */
+  .bookhead{text-align:center;margin-bottom:14px}
+  .bookhead h2{font-size:28px;margin:4px 0}
+  .bookhead p{color:var(--soft);font-size:15px;margin:0}
+  .icon{font-size:15px;border:0;border-radius:12px;padding:9px 12px;background:rgba(253,247,230,.16);color:var(--cream);cursor:pointer;font-family:inherit}
+  .empty{text-align:center;color:var(--soft);font-size:15px;padding:18px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -118,10 +155,21 @@
     <div class="avatar" id="avStart"></div>
     <h1>Emma 만나기</h1>
     <p>나율이의 영어 책 친구 · 10분만 가볍게</p>
+    <div class="modes" id="modes">
+      <button class="md" data-md="parrot">🦜 따라 말하기<small>Emma 말을 그대로</small></button>
+      <button class="md" data-md="talk">🗣 영어회화<small>내가 직접 · 힌트 있음</small></button>
+      <button class="md on" data-md="book">📖 책 이야기<small>읽은 책으로</small></button>
+    </div>
     <div class="books" id="books"></div>
     <div class="otherrow hidden" id="otherRow"><input id="otherTitle" placeholder="읽은 책 제목을 적어 줘 (영어로)"></div>
+    <div class="otherrow hidden" id="boxRow" style="align-items:center;gap:8px">
+      <span style="font-size:15px;opacity:.8;white-space:nowrap">박스카 몇 권까지 읽었어?</span>
+      <input id="boxBookNo" type="number" min="1" max="19" style="width:90px">
+      <span style="font-size:15px;opacity:.8">권</span>
+    </div>
     <button class="big" id="go">▶ 시작하기</button>
-    <div style="margin-top:14px"><button class="sm" id="dressBtn">👗 Emma 꾸미기</button></div>
+    <div style="margin-top:14px"><button class="sm" id="dressBtn">👗 Emma 꾸미기</button>
+      <button class="sm hidden" id="listenBtn">🎧 음원 듣기</button></div>
   </section>
 
   <!-- 꾸미기 -->
@@ -176,6 +224,38 @@
     </details>
   </section>
 
+
+  <!-- 🎧 음원 듣기 -->
+  <section id="listen" class="box hidden">
+    <div class="bookhead"><h2>🎧 음원 듣기</h2><p>집에 있는 음원이야 · 듣고 나서 같이 이야기하자</p></div>
+
+    <div class="player hidden" id="player" data-rate="1">
+      <div class="ttl" id="ptitle"></div>
+      <div class="pbar" id="pbar"><i id="pfill"></i></div>
+      <div class="ptime"><span id="pnow">0:00</span><span id="pdur">0:00</span></div>
+      <div class="pctl">
+        <button class="pbtn" id="pback">⏪ 10초</button>
+        <button class="pbtn big" id="pplay">▶</button>
+        <button class="pbtn" id="pfwd">10초 ⏩</button>
+      </div>
+      <div class="pctl">
+        <button class="pbtn prate" data-rate="0.75">0.75×</button>
+        <button class="pbtn prate on" data-rate="1">1×</button>
+        <button class="pbtn prate" data-rate="1.25">1.25×</button>
+      </div>
+    </div>
+
+    <div class="lsthead">
+      <button class="icon" id="lstup" style="visibility:hidden">← 위로</button>
+      <div class="crumb" id="crumb">음원 서재</div>
+    </div>
+    <div class="lstbox" id="lstbox"></div>
+
+    <div class="row" style="margin-top:16px">
+      <button class="next" id="lstTalk">📖 이 책으로 이야기하기</button>
+      <button class="sm" id="lstBack">← 돌아가기</button>
+    </div>
+  </section>
   <!-- 마무리 -->
   <section id="end" class="box wrap hidden">
     <div class="face">🎉</div>
@@ -359,6 +439,7 @@ const DRAGONS=['Worm','Shu','Vulcan','Kepri','Petra','Ruby'];
 const KO_WORDS=[[/웜/,'Worm'],[/불|파이어/,'fire'],[/날|하늘/,'fly'],[/강|세/,'strong'],[/착|친절/,'kind'],[/멋/,'cool'],[/귀여/,'cute'],[/물/,'water'],[/독/,'poison'],[/모르|몰라/,'?']];
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
 const clean=t=>t.trim().replace(/[.!?]+$/,'');
 
 let state={book:null};
@@ -666,8 +747,371 @@ const OTHER_STEPS=()=>[
   ...commonQs()
 ];
 
+
+/* ---------------- 🗣 영어회화 — 묻는 말과 대답하는 말을 짝으로 ----------------
+   나율은 원어민 대화급으로 알아듣는다 → 짧은 정답이 아니라
+   이유를 대고 되묻는, 실제로 쓰는 말투로 짰다. */
+const TALK_SETS={
+ day:{name:"오늘 하루", e:"☀️", ko:"하루 이야기·기분", lines:[
+  {r:'q',en:"Hey Nayul! How was your day today?",ko:"안녕 나율! 오늘 하루 어땠어?"},
+  {r:'a',en:"It was pretty good, actually. A little tiring, but good.",ko:"사실 꽤 괜찮았어. 좀 피곤했지만 좋았어."},
+  {r:'q',en:"What made it tiring?",ko:"뭐가 그렇게 피곤했어?"},
+  {r:'a',en:"We had a lot going on at school, and I barely had a break.",ko:"학교에 일이 많아서 쉴 틈이 거의 없었어."},
+  {r:'q',en:"Did anything fun happen?",ko:"재밌는 일은 없었어?"},
+  {r:'a',en:"Yeah! My friend and I made up a game at recess. It was so silly.",ko:"응! 쉬는 시간에 친구랑 게임을 하나 만들었어. 완전 엉뚱했어."},
+  {r:'q',en:"That sounds fun. Would you play it again?",ko:"재밌겠다. 또 할 거야?"},
+  {r:'a',en:"Definitely. I want to teach it to more people tomorrow.",ko:"당연하지. 내일은 더 많은 애들한테 알려주고 싶어."}]},
+
+ like:{name:"요즘 빠진 것", e:"💛", ko:"좋아하는 것 설명하기", lines:[
+  {r:'q',en:"What's something you're really into these days?",ko:"요즘 진짜 빠져 있는 게 뭐야?"},
+  {r:'a',en:"I've been really into reading chapter books lately.",ko:"요즘 챕터북 읽는 데 푹 빠져 있어."},
+  {r:'q',en:"What do you like about them?",ko:"그게 왜 좋아?"},
+  {r:'a',en:"I like that the story keeps going. You really get to know the characters.",ko:"이야기가 계속 이어지는 게 좋아. 인물들을 제대로 알게 되거든."},
+  {r:'q',en:"Is there one you'd recommend?",ko:"추천할 만한 거 있어?"},
+  {r:'a',en:"Yes! You should try it. I think you'd get hooked too.",ko:"응! 한번 읽어 봐. 너도 빠질걸."},
+  {r:'q',en:"What makes a book good, do you think?",ko:"좋은 책은 뭐가 다른 것 같아?"},
+  {r:'a',en:"For me, it's when I care about what happens next.",ko:"나한테는 다음이 궁금해지는 책이 좋은 책이야."}]},
+
+ think:{name:"내 생각 말하기", e:"💭", ko:"의견 말하고 이유 대기", lines:[
+  {r:'q',en:"Do you think kids should have homework?",ko:"아이들한테 숙제가 있어야 한다고 생각해?"},
+  {r:'a',en:"Honestly, a little is fine, but not too much.",ko:"솔직히 조금은 괜찮은데, 너무 많은 건 아닌 것 같아."},
+  {r:'q',en:"Why do you say that?",ko:"왜 그렇게 생각해?"},
+  {r:'a',en:"Because we need time to rest and play too, not just study.",ko:"공부만 하는 게 아니라 쉬고 노는 시간도 필요하니까."},
+  {r:'q',en:"That's a fair point. What would you change?",ko:"일리 있네. 그럼 뭘 바꾸고 싶어?"},
+  {r:'a',en:"I'd make it shorter but more interesting.",ko:"더 짧게, 대신 더 재밌게 만들 거야."},
+  {r:'q',en:"Would everyone agree with you?",ko:"다들 네 생각에 동의할까?"},
+  {r:'a',en:"Probably not, but that's okay. People can think differently.",ko:"아마 아닐걸. 근데 괜찮아. 사람마다 생각이 다를 수 있으니까."}]},
+
+ upset:{name:"속상할 때", e:"🌧", ko:"마음 이야기하기", lines:[
+  {r:'q',en:"You look upset. Is everything okay?",ko:"속상해 보여. 무슨 일 있어?"},
+  {r:'a',en:"Not really. Something happened and I'm still thinking about it.",ko:"사실 좀. 무슨 일이 있었는데 아직 생각이 나."},
+  {r:'q',en:"Do you want to talk about it?",ko:"얘기하고 싶어?"},
+  {r:'a',en:"Maybe later. I just need a minute first.",ko:"이따가. 지금은 잠깐 혼자 있고 싶어."},
+  {r:'q',en:"That's totally fine. I'm here if you need me.",ko:"당연히 괜찮지. 필요하면 나 여기 있어."},
+  {r:'a',en:"Thanks. That actually helps a lot.",ko:"고마워. 그 말이 진짜 도움 돼."},
+  {r:'q',en:"Is there anything I can do?",ko:"내가 뭐 해 줄 거 있어?"},
+  {r:'a',en:"Just staying with me is enough, honestly.",ko:"그냥 같이 있어 주는 것만으로 충분해."}]},
+
+ plan:{name:"약속 잡기", e:"📅", ko:"계획 세우기", lines:[
+  {r:'q',en:"What are you up to this weekend?",ko:"이번 주말에 뭐 해?"},
+  {r:'a',en:"Nothing much so far. I might just stay home and read.",ko:"아직 별거 없어. 그냥 집에서 책이나 읽을까 봐."},
+  {r:'q',en:"Want to do something together?",ko:"같이 뭐 할래?"},
+  {r:'a',en:"That sounds great. What did you have in mind?",ko:"좋지. 뭐 생각해 둔 거 있어?"},
+  {r:'q',en:"How about Saturday afternoon?",ko:"토요일 오후 어때?"},
+  {r:'a',en:"Saturday works for me. Let's say around two?",ko:"토요일 괜찮아. 두 시쯤 어때?"},
+  {r:'q',en:"Perfect. Should I bring anything?",ko:"좋아. 뭐 가져갈까?"},
+  {r:'a',en:"Just yourself. I'll take care of the rest.",ko:"너만 오면 돼. 나머지는 내가 할게."}]},
+
+ try:{name:"못하던 것 해내기", e:"🌱", ko:"새로운 것 시도하기", lines:[
+  {r:'q',en:"Have you ever tried something you were really bad at?",ko:"진짜 못하는 걸 해 본 적 있어?"},
+  {r:'a',en:"Oh, definitely. I was terrible at it at first.",ko:"당연하지. 처음엔 완전 못했어."},
+  {r:'q',en:"Did you want to quit?",ko:"그만두고 싶었어?"},
+  {r:'a',en:"I kind of did, but I kept going anyway.",ko:"좀 그랬는데, 그래도 계속했어."},
+  {r:'q',en:"What made you keep going?",ko:"뭐 때문에 계속했어?"},
+  {r:'a',en:"I got a little better each time, and that felt good.",ko:"할 때마다 조금씩 나아지는 게 기분 좋았어."},
+  {r:'q',en:"Would you tell someone else to try it?",ko:"다른 사람한테도 해 보라고 할 거야?"},
+  {r:'a',en:"Absolutely. The hardest part is just starting.",ko:"당연하지. 제일 어려운 건 시작하는 거니까."}]}
+};
+const TOPIC_EN={day:'your day',like:'what you are into',think:'sharing your opinion',upset:'how you feel',plan:'making plans',try:'trying something new'};
+for(const k in TALK_SETS) TALK_SETS[k].name_en=TOPIC_EN[k];
+let topic='day';
+try{ topic=localStorage.getItem('emmaTopic')||'day'; }catch(e){}
+if(!TALK_SETS[topic]) topic='day';
+
+function parrotSteps(key){
+  const set=TALK_SETS[key];
+  return [
+    {en:`Hi Nayul! It's Emma. Today let's practice talking about ${set.name_en||'this'}. Say each line after me!`,
+     ko:`안녕 나율! 오늘은 "${set.ko}"로 연습해 보자. 한 줄씩 따라 말해 봐!`, choices:[], intro:true},
+    ...set.lines.map((L,k)=>({
+      en:L.en, ko:L.ko, choices:[L.en], practice:true, r:L.r, model:()=>L.en,
+      lead: L.r==='q'
+        ? (k===0?"First, the question. Say it with me!":pick(["Now you ask me this!","Your turn to ask!","Here comes the question!"]))
+        : pick(["And here's how you answer.","Now answer like this.","This is what you could say.","And you can say..."])})),
+    {en:"You said every single line! That was a real conversation, Nayul. Bye for now!",
+     ko:"한 줄도 안 빼고 다 말했어! 방금 그거 진짜 대화였어, 나율. 안녕!", choices:[], last:true}
+  ];
+}
+const NICE_REPEAT=["Nice! That sounded really natural.","Yes! Just like that.","Perfect. You've got it.","That was great, Nayul!","Ooh, that sounded so smooth!"];
+
+/* ---------------- 🗣 영어회화 — 나율이가 직접 말한다 ----------------
+   따라 말하기와 다른 점: 정해진 답이 없다. 나율이 말이 곧 대답이다.
+   대신 아직 말하기가 서투니 "이렇게 말해 봐" 힌트를 늘 붙여 준다. */
+const FOLLOWS=["Why do you think that?","Tell me more about that!","How did that make you feel?","What happened next?","Really? What else?","And then what?","What made you say that?"];
+let usedF=[];
+function nextFollow(list){
+  const src=(list&&list.length)?list:FOLLOWS;
+  const fresh=src.filter(f=>!usedF.includes(f));
+  const f=pick(fresh.length?fresh:src);
+  usedF.push(f); if(usedF.length>4) usedF.shift();
+  return f;
+}
+// 짝이 되는 '대답하는 말'에서 첫머리를 떼어 힌트로 쓴다
+function starterOf(line){
+  if(!line) return "I think...";
+  // 문장으로 쪼개서 가장 알맹이 있는 문장을 고른다 ("Oh, definitely." 같은 맞장구는 버린다)
+  const parts=line.split(/(?<=[.!?])\s+/).map(x=>x.trim()).filter(Boolean);
+  let best=parts[0]||line;
+  for(const s of parts) if(s.split(/\s+/).length>best.split(/\s+/).length) best=s;
+  const w=best.split(/\s+/).slice(0,4).join(' ').replace(/[.,!?]+$/,'');
+  return w.charAt(0).toUpperCase()+w.slice(1)+'...';
+}
+function hintsFor(ans){
+  return [starterOf(ans), "I think...", "I'm not sure, but..."];
+}
+function freeTalkSteps(key){
+  const set=TALK_SETS[key];
+  const qs=set.lines.filter(L=>L.r==='q');
+  const as=set.lines.filter(L=>L.r==='a');
+  usedF=[];
+  return [
+    {en:`Hi Nayul! It's Emma. Let's just talk about ${set.name_en||'you'}. Say whatever you want — I'll help you along!`,
+     ko:`안녕 나율! 오늘은 "${set.ko}"로 그냥 이야기하자. 하고 싶은 말 아무거나 해도 돼 — 힌트 줄게!`, choices:[], intro:true},
+    ...qs.map((q,k)=>({en:q.en, ko:q.ko, choices:[], ask:true, hints:hintsFor((as[k]||{}).en||'')})),
+    {en:"I loved talking with you, Nayul. You said so much today! See you next time.",
+     ko:"너랑 이야기해서 정말 좋았어. 오늘 진짜 많이 말했다! 다음에 또 봐.", choices:[], last:true}
+  ];
+}
+// 서버 없이도 대화가 이어지게 — 되받고 한 번 더 묻는다
+function offlineReply(text,follows){
+  if(/[가-힣]/.test(text)) return pick(["I see! That makes sense.","Oh, okay! I get it.","Mmm, I understand."])+' '+nextFollow(follows);
+  const t=text.replace(/\s+/g,' ').trim().replace(/[.!?]+$/,'');
+  const w=t.split(' ');
+  const e=(w.length>=2&&w.length<=12)?t:null;
+  const low = x => /^I('|\s|$)/.test(x) ? x : x.charAt(0).toLowerCase()+x.slice(1);
+  const react = e
+    ? pick([`Oh, ${low(e)}! Nice.`,
+            `${e.charAt(0).toUpperCase()+e.slice(1)}! I like that.`,
+            `Really? ${e.charAt(0).toUpperCase()+e.slice(1)}!`,
+            `Ooh, ${low(e)}.`])
+    : pick(GOOD);
+  return react+' '+nextFollow(follows);
+}
+
+/* ---------------- 진짜 대화 (집 서버가 있을 때만) ---------------- */
+let LIVE=false, chat=[];
+async function checkLive(){
+  try{ const r=await fetch('chat/ping',{cache:'no-store'}); if(!r.ok) return false; const j=await r.json(); return !!j.ok; }
+  catch(e){ return false; }
+}
+async function liveReply(history){
+  const r=await fetch('chat',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({who:'emma',stage:'native',boxBook:boxBook,book:(state&&state.series==='other'?state.title:(state&&SERIES[state.series]?SERIES[state.series].name:'')),messages:history})});
+  if(!r.ok) throw new Error('chat failed');
+  const j=await r.json(); if(j.error) throw new Error(j.error);
+  return {text:j.text||'', hints:Array.isArray(j.hints)?j.hints:[]};
+}
+
+/* 💡 대답 힌트 — 나율이가 아직 말하기가 서툴러서, 뭘 말하면 좋을지 붙여 준다.
+   누르면 읽어 주고, 그대로 말해도 되고 바꿔 말해도 된다. */
+const FALLBACK_HINTS=["I think ...","Because ...","Maybe ...","I'm not sure, but ..."];
+function showHints(list){
+  const c=$('choices'); c.innerHTML='';
+  const hints=(list&&list.length)?list:FALLBACK_HINTS;
+  hints.slice(0,4).forEach(h=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=h;
+    b.onclick=()=>say(h.replace(/\.\.\.|…/g,'').trim(),0.85);
+    c.appendChild(b);
+  });
+  $('chiphint').textContent='💡 이렇게 말해 봐 — 누르면 읽어 줘요 (그대로 말해도, 바꿔 말해도 좋아)';
+  $('chiphint').classList.remove('hidden');
+}
+
+
+/* ---------------- 🚃 박스카칠드런 전용 ----------------
+   나율이가 읽은 데까지만 이야기한다. 뒷권은 제목과 배경만 흘려서 궁금하게 만든다.
+   스포일러는 흥미를 죽인다 — 여기서 제일 중요한 규칙이다. */
+let boxBook=4;
+try{ boxBook=parseInt(localStorage.getItem('emmaBoxBook')||'4',10)||4; }catch(e){}
+
+const BOX_TITLES={1:"The Boxcar Children",2:"Surprise Island",3:"The Yellow House Mystery",
+ 4:"Mystery Ranch",5:"Mike's Mystery",6:"Blue Bay Mystery",7:"The Woodshed Mystery",
+ 8:"The Lighthouse Mystery",9:"Mountain Top Mystery",10:"Schoolhouse Mystery",
+ 11:"Caboose Mystery",12:"Houseboat Mystery",13:"Snowbound Mystery",14:"Tree House Mystery",
+ 15:"Bicycle Mystery",16:"Mystery in the Sand",17:"Mystery Behind the Wall",
+ 18:"Bus Station Mystery",19:"Benny Uncovers a Mystery"};
+// 다음 권 맛보기 — 표지에 적힌 만큼만. 무슨 일이 일어나는지는 절대 말하지 않는다.
+const BOX_TEASE={2:"they get a whole island to themselves",
+ 3:"an old yellow house across the water",4:"a ranch way out west",
+ 5:"there's a boy named Mike",6:"an island, far far away",
+ 7:"an old house with a woodshed",8:"a lighthouse by the sea",9:"way up on a mountain",
+ 10:"an old schoolhouse",11:"a train caboose",12:"a houseboat on the water",
+ 13:"they get snowed in",14:"a tree house",15:"a bicycle trip",16:"a beach and the sand",
+ 17:"something behind a wall",18:"a busy bus station",19:"Benny is all grown up a bit"};
+
+// 읽은 권마다 나눌 거리 — 줄거리를 캐묻는 질문 위주.
+// Emma는 답을 아는 척하지 않는다. 나율이가 떠올려 말하면 그걸 받아 더 파고든다.
+const H_TELL=["Tell me...","I remember that...","First they...","I think it was..."];
+const H_WHO =["It was...","I think...","I don't remember, but..."];
+const H_WHY =["Because...","I think it's because...","Maybe because..."];
+const BOX_ASKS={
+ 1:[{en:"How did the children find the boxcar? What was happening that night?",
+     ko:"아이들이 화물칸을 어떻게 찾았어? 그날 밤에 무슨 일이 있었지?", hints:H_TELL},
+    {en:"Before the boxcar, where did they sleep on the very first night?",
+     ko:"화물칸 찾기 전에, 첫날 밤엔 어디서 잤어?", hints:H_TELL},
+    {en:"Why did they run away instead of going to their grandfather?",
+     ko:"왜 할아버지한테 안 가고 도망쳤어?", hints:H_WHY},
+    {en:"They found a dog in the woods. What was wrong with him when they found him?",
+     ko:"숲에서 강아지를 찾았잖아. 처음 찾았을 때 어디가 아팠지?", hints:H_TELL},
+    {en:"Where did they get their dishes and cups? How did they find them?",
+     ko:"그릇이랑 컵은 어디서 났어? 어떻게 구했지?", hints:H_TELL},
+    {en:"How did Henry earn money for the family? Who did he work for?",
+     ko:"헨리는 어떻게 돈을 벌었어? 누구 집에서 일했지?", hints:H_WHO},
+    {en:"Jessie taught Benny something new in the boxcar. Do you remember what?",
+     ko:"제시가 화물칸에서 베니한테 새로운 걸 가르쳐 줬지. 뭐였는지 기억나?", hints:H_TELL},
+    {en:"How did Grandfather finally find them? Tell me what happened.",
+     ko:"할아버지가 결국 어떻게 찾아냈어? 무슨 일이 있었는지 말해 줘.", hints:H_TELL},
+    {en:"At the very end, what did Grandfather do with the boxcar?",
+     ko:"맨 마지막에 할아버지가 화물칸을 어떻게 했어?", hints:H_TELL}],
+
+ 2:[{en:"Where did the children stay on Surprise Island? It wasn't a house, right?",
+     ko:"섬에서 아이들은 어디서 지냈어? 집은 아니었지?", hints:H_TELL},
+    {en:"Who took them out to the island in his boat?",
+     ko:"누가 배로 섬까지 데려다 줬어?", hints:H_WHO},
+    {en:"They met a young man on the island. Who did he turn out to be? Were you surprised?",
+     ko:"섬에서 어떤 청년을 만났잖아. 알고 보니 누구였어? 놀랐어?", hints:H_WHO},
+    {en:"Benny kept collecting things all summer. What kinds of things did he find?",
+     ko:"베니가 여름 내내 뭘 모았지. 어떤 것들을 찾았어?", hints:H_TELL},
+    {en:"What did they do all day on the island? Tell me everything you remember.",
+     ko:"섬에서 하루종일 뭐 했어? 기억나는 대로 다 말해 줘.", hints:H_TELL},
+    {en:"Was there anything strange or surprising on that island?",
+     ko:"그 섬에 이상하거나 놀라운 게 있었어?", hints:H_TELL}],
+
+ 3:[{en:"What was the mystery about the yellow house? Who disappeared?",
+     ko:"노란 집의 수수께끼가 뭐였어? 누가 사라졌지?", hints:H_WHO},
+    {en:"In that book the children went on a trip. Where did they go, and how did they travel?",
+     ko:"그 권에서 아이들이 여행을 떠났잖아. 어디로, 어떻게 갔어?", hints:H_TELL},
+    {en:"Which one of the children found the biggest clue?",
+     ko:"제일 큰 단서를 찾은 건 누구였어?", hints:H_WHO},
+    {en:"How did it end? What really happened to the man who was missing?",
+     ko:"결말이 어떻게 됐어? 사라졌던 사람은 결국 어떻게 된 거야?", hints:H_TELL},
+    {en:"Was there a part that made you nervous? Tell me about it.",
+     ko:"조마조마했던 장면 있었어? 얘기해 줘.", hints:H_TELL},
+    {en:"Did you guess the answer before the end, or did it surprise you?",
+     ko:"끝나기 전에 답을 맞혔어, 아니면 놀랐어?", hints:["I guessed it because...","It surprised me because...","Kind of, but..."]}],
+
+ 4:[{en:"Who is Aunt Jane? How is she related to the children?",
+     ko:"제인 고모는 누구야? 아이들이랑 어떤 사이지?", hints:H_WHO},
+    {en:"Why did Jessie and Violet go to the ranch first, without Henry and Benny?",
+     ko:"왜 제시랑 바이올렛만 먼저 목장에 갔어? 헨리랑 베니 없이.", hints:H_WHY},
+    {en:"What was Aunt Jane like when they first arrived?",
+     ko:"처음 도착했을 때 제인 고모는 어땠어?", hints:H_TELL},
+    {en:"What made Aunt Jane start to change?",
+     ko:"제인 고모가 달라지기 시작한 건 뭐 때문이었어?", hints:H_WHY},
+    {en:"What was the mystery at the ranch? What did they find out there?",
+     ko:"목장의 수수께끼가 뭐였어? 거기서 뭘 찾아냈지?", hints:H_TELL},
+    {en:"Who else lived or worked at the ranch? Do you remember any names?",
+     ko:"목장에 또 누가 살거나 일했어? 이름 기억나는 사람 있어?", hints:H_WHO}]
+};
+
+// 줄거리 따라가기 — 한 번에 다 말하게 하지 않는다.
+// Emma가 이야기 순서대로 한 토막씩 물어서 끝까지 데려간다.
+// 아이는 그 토막만 떠올리면 되니 부담이 적고, 다 하고 나면 줄거리 전체를 말한 셈이 된다.
+const W_START=["At the beginning...","First, ...","It starts when..."];
+const W_THEN =["Then...","After that...","Next, ..."];
+const W_END  =["At the end...","Finally, ...","In the end..."];
+const BOX_WALK={
+ 1:[{en:"Let's go through book 1 together, from the very start. At the beginning, where were the four children, and what had happened to them?",
+     ko:"1권을 처음부터 같이 따라가 보자. 시작할 때 네 남매는 어디 있었고, 무슨 일이 있었지?", hints:W_START},
+    {en:"They didn't want to go to their grandfather. Why not?",
+     ko:"아이들이 할아버지한테 가기 싫어했잖아. 왜?", hints:["Because they thought...","They were afraid...","Because..."]},
+    {en:"Before they found the boxcar, where did they spend that first night?",
+     ko:"화물칸을 찾기 전에, 첫날 밤은 어디서 보냈어?", hints:["They slept in...","They stayed at...","I think..."]},
+    {en:"Then came the boxcar. How did they find it?",
+     ko:"그러다 화물칸이 나오지. 어떻게 찾았어?", hints:["They found it when...","It was raining, so...","They were walking and..."]},
+    {en:"How did they turn that old boxcar into a real home? What did they bring inside?",
+     ko:"그 낡은 화물칸을 어떻게 진짜 집으로 만들었어? 뭘 가져다 놨지?", hints:["They found...","They brought...","They made..."]},
+    {en:"A dog showed up. Tell me that part.",
+     ko:"강아지가 나타나지. 그 부분 얘기해 줘.", hints:["They found a dog...","The dog was...","They named him..."]},
+    {en:"How did they get food and money to live on?",
+     ko:"먹을 것이랑 돈은 어떻게 구했어?", hints:["Henry...","He worked for...","They..."]},
+    {en:"Near the end, something went wrong. What happened?",
+     ko:"끝날 때쯤 일이 하나 생기잖아. 무슨 일이었지?", hints:W_THEN},
+    {en:"And how does book 1 end?",
+     ko:"1권은 어떻게 끝나?", hints:W_END}],
+
+ 2:[{en:"Let's walk through book 2. How does it start — where do the children go for the summer?",
+     ko:"2권을 따라가 보자. 어떻게 시작해? 아이들이 여름에 어디로 가지?", hints:W_START},
+    {en:"Where did they stay on the island? What was it like?",
+     ko:"섬에서 어디서 지냈어? 어떤 곳이었어?", hints:["They stayed in...","It was...","There was..."]},
+    {en:"Who did they meet there?",
+     ko:"거기서 누구를 만났어?", hints:["They met...","There was a...","I think..."]},
+    {en:"What did they do, day after day, on the island?",
+     ko:"섬에서 날마다 뭘 했어?", hints:W_THEN},
+    {en:"Was there something they discovered or figured out?",
+     ko:"뭔가 알아내거나 발견한 게 있었어?", hints:["They found out...","They discovered...","Yes, they..."]},
+    {en:"And how does book 2 end?",
+     ko:"2권은 어떻게 끝나?", hints:W_END}],
+
+ 3:[{en:"Let's walk through book 3. How does it begin — what did the children want to find out?",
+     ko:"3권을 따라가 보자. 어떻게 시작해? 아이들이 뭘 알아내고 싶어 했지?", hints:W_START},
+    {en:"What was strange about that yellow house?",
+     ko:"그 노란 집이 뭐가 이상했어?", hints:["It was...","Nobody...","Because..."]},
+    {en:"Who had disappeared? Tell me what you know about him.",
+     ko:"누가 사라졌지? 그 사람에 대해 아는 대로 말해 줘.", hints:["A man named...","He was...","He disappeared..."]},
+    {en:"The children went on a trip in this one. Where did they go, and how?",
+     ko:"이 권에서 아이들이 여행을 떠나잖아. 어디로, 어떻게 갔어?", hints:W_THEN},
+    {en:"What did they find out along the way?",
+     ko:"가는 길에 뭘 알아냈어?", hints:["They found...","They learned that...","Then they..."]},
+    {en:"And how does book 3 end?",
+     ko:"3권은 어떻게 끝나?", hints:W_END}],
+
+ 4:[{en:"Let's walk through book 4. How does it start — why did they go to Aunt Jane?",
+     ko:"4권을 따라가 보자. 어떻게 시작해? 왜 제인 고모한테 갔지?", hints:W_START},
+    {en:"Who went to the ranch first, and why only them?",
+     ko:"목장에 누가 먼저 갔어? 왜 그 둘만?", hints:["Jessie and Violet...","Because...","Only they..."]},
+    {en:"What was Aunt Jane like at the beginning?",
+     ko:"처음에 제인 고모는 어땠어?", hints:["She was...","At first she...","She didn't..."]},
+    {en:"What was the ranch like? What did they do there?",
+     ko:"목장은 어떤 곳이었어? 거기서 뭘 했어?", hints:W_THEN},
+    {en:"What was the mystery? What did they find?",
+     ko:"수수께끼가 뭐였어? 뭘 찾아냈지?", hints:["They found...","The mystery was...","There was..."]},
+    {en:"And how did Aunt Jane change by the end?",
+     ko:"마지막에 제인 고모는 어떻게 달라졌어?", hints:W_END}]
+};
+const WALK_FOLLOWS=["And then what?","What happened next?","Ooh, tell me more about that!","Really? Keep going!","Who else was there?","What did they say?"];
+
+function boxSteps(){
+  const read=Math.max(1,Math.min(19,boxBook||4));
+  const next=read+1;
+  const walk=BOX_WALK[read]||[];
+  // 지난 권에서 한두 개만 — 기억을 되살리는 자리
+  let older=[];
+  for(let k=1;k<read;k++) if(BOX_ASKS[k]) older=older.concat(BOX_ASKS[k].map(q=>({...q,bk:k})));
+  const back=shuffle(older).slice(0,2);
+  const steps=[
+    {en:`Hi Nayul! It's me, Emma. You finished book ${read} — ${BOX_TITLES[read]||''}! Let's go through it together, bit by bit.`,
+     ko:`안녕 나율! 나 Emma야. ${read}권 다 읽었구나 — ${BOX_TITLES[read]||''}! 같이 한 토막씩 따라가 보자.`,
+     choices:["Hi Emma!","Okay!"], model:()=>"Hi Emma!", react:()=>"Yay! I want to hear all of it."},
+    {en:"First — who's your favorite? Henry, Jessie, Violet, or Benny?",
+     ko:"먼저 — 누가 제일 좋아? 헨리, 제시, 바이올렛, 아니면 베니?",
+     choices:["Henry","Jessie","Violet","Benny"], model:()=>"I like Benny.",
+     koModel:t=>{const h=[[/헨리/,'Henry'],[/제시/,'Jessie'],[/바이올렛|바올렛/,'Violet'],[/베니|벤니/,'Benny'],[/와치|워치/,'Watch']].find(([re])=>re.test(t)); return h?`I like ${h[1]}.`:null;},
+     react:t=>{const n=['Henry','Jessie','Violet','Benny','Watch'].find(x=>new RegExp(x,'i').test(t));
+       if(n){state.fav=n; return `${n}! Oh, I love ${n} too.`;} return "Ooh, nice pick!";},
+     follow:"What did they do in the story that made you like them?"},
+    // 📖 줄거리 따라가기 — 순서대로, 한 토막씩
+    ...walk.map((q,k)=>({en:q.en, ko:`📖 줄거리 따라가기 ${k+1}/${walk.length} · ${q.ko}`,
+      choices:[], ask:true, hints:q.hints, follows:WALK_FOLLOWS})),
+    // 지난 권 되짚기
+    ...back.map(q=>({en:`By the way — from book ${q.bk}: ${q.en}`,
+      ko:`그러고 보니 ${q.bk}권 얘긴데 — ${q.ko}`, choices:[], ask:true, hints:q.hints})),
+  ];
+  if(next<=19 && BOX_TEASE[next]){
+    steps.push({en:`You told me the whole story, Nayul! Okay — book ${next} is "${BOX_TITLES[next]}". All I'll say is: ${BOX_TEASE[next]}. That's it! I'm not telling you any more.`,
+      ko:`너 방금 이야기를 통째로 다 말한 거야, 나율! 자 — 다음 ${next}권은 "${BOX_TITLES[next]}". 딱 이것만 말해 줄게: ${BOX_TEASE[next]}. 끝! 더는 안 알려줘.`,
+      choices:[], ask:true, hints:["That sounds fun!","Tell me more!","I want to read it!"]});
+    steps.push({en:`When you finish it, come back and we'll walk through that one too. Deal?`,
+      ko:`다 읽고 오면 그 권도 같이 한 토막씩 따라가자. 약속?`,
+      choices:["Deal!","Okay!"], model:()=>"Deal!", react:()=>"Yes! I can't wait."});
+  }
+  steps.push({en:"You remembered so much, Nayul. Go read some more! Bye!",
+    ko:"진짜 많이 기억하고 있구나, 나율. 얼른 더 읽으러 가! 안녕!",
+    choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma!", last:true, react:()=>"Bye, Nayul!"});
+  return steps;
+}
 const SERIES={
-  box:{name:"The Boxcar Children", e:"🚃", ko:"박스카 칠드런", steps:()=>[...BOX_STEPS.slice(0,6), BOX_STEPS[7], ...commonQs()]},
+  box:{name:"The Boxcar Children", e:"🚃", ko:"박스카 칠드런", steps:()=>boxSteps()},
   mth:{name:"Magic Tree House", e:"🌳", ko:"매직 트리 하우스", steps:MTH_STEPS},
   jbj:{name:"Junie B. Jones", e:"🎒", ko:"주니 비 존스", steps:JBJ_STEPS},
   mw:{name:"Mercy Watson", e:"🐷", ko:"머시 왓슨", steps:MW_STEPS},
@@ -678,8 +1122,24 @@ const SERIES={
 let series='box', otherTitle='';
 try{ series=localStorage.getItem('emmaSeries')||'box'; otherTitle=localStorage.getItem('emmaOtherTitle')||''; }catch(e){}
 if(!SERIES[series]) series='box';
+let MODE='book';
+try{ MODE=localStorage.getItem('emmaMode')||'book'; }catch(e){}
+if(!['book','talk','parrot'].includes(MODE)) MODE='book';
+
 function renderBooks(){
   const box=$('books'); box.innerHTML='';
+  document.querySelectorAll('.md').forEach(b=>b.classList.toggle('on',b.dataset.md===MODE));
+  if(MODE==='parrot' || MODE==='talk'){
+    for(const k in TALK_SETS){
+      const t=TALK_SETS[k];
+      const b=document.createElement('button'); b.className='bk'+(k===topic?' on':'');
+      b.innerHTML=`<span class="e">${t.e}</span>${t.name}<br><small style="opacity:.7">${t.ko}</small>`;
+      b.onclick=()=>{topic=k; try{localStorage.setItem('emmaTopic',k);}catch(e){} renderBooks();};
+      box.appendChild(b);
+    }
+    $('otherRow').classList.add('hidden');
+    return;
+  }
   for(const k in SERIES){
     const b=document.createElement('button'); b.className='bk'+(k===series?' on':'');
     b.innerHTML=`<span class="e">${SERIES[k].e}</span>${SERIES[k].name}<br><small style="opacity:.7">${SERIES[k].ko}</small>`;
@@ -687,15 +1147,22 @@ function renderBooks(){
     box.appendChild(b);
   }
   $('otherRow').classList.toggle('hidden',series!=='other');
+  $('boxRow').classList.toggle('hidden',series!=='box');
+  $('boxBookNo').value=boxBook;
   $('otherTitle').value=otherTitle;
 }
+document.querySelectorAll('.md').forEach(b=>b.onclick=()=>{
+  MODE=b.dataset.md; try{localStorage.setItem('emmaMode',MODE);}catch(e){}
+  renderBooks();
+});
 
 /* ---------------- 진행 ---------------- */
 let i=0, turn=0, log=[], t0=0, tick=null, lastLine='', rec=null, listening=false;
 const $=id=>document.getElementById(id);
 const txt=v=>typeof v==='function'?v():v;
 
-function show(id){['start','dress','talk','end'].forEach(s=>$(s).classList.toggle('hidden',s!==id));}
+function show(id){['start','dress','talk','end','listen'].forEach(s=>$(s).classList.toggle('hidden',s!==id));
+  if(id!=='listen') stopAudio();}
 
 async function emmaSays(line){
   lastLine=line; $('en').textContent=line;
@@ -714,8 +1181,21 @@ async function renderStep(){
     c.appendChild(b);
   });
   $('chiphint').classList.toggle('hidden',!txt(s.choices).length);
+  if(txt(s.choices).length) $('chiphint').textContent =
+      s.r==='q' ? '🙋 묻는 말 — 누르면 다시 읽어 줘요 → 따라 말해 봐요'
+    : s.r==='a' ? '💬 대답하는 말 — 누르면 다시 읽어 줘요 → 따라 말해 봐요'
+    : '누르면 Emma가 읽어 줘요 → 따라 말해 봐요';
+  $('miclabel').textContent = s.practice ? '따라 말해 봐 — 눌러서 말하기'
+                            : LIVE ? '눌러서 영어로 말해 봐 — 얼마든지 이어서 말해도 돼'
+                            : '눌러서 영어로 말해 봐';
   $('next').textContent = s.last ? '끝내기 🎉' : '다음 →';
-  await emmaSays(txt(s.en));
+  if(s.practice){ await emmaSays(s.lead+' '+txt(s.en)); lastLine=txt(s.en); }
+  else await emmaSays(txt(s.en));
+  if(!s.practice && !s.intro && !s.last){
+    if(LIVE) chat.push({role:'assistant',content:txt(s.en)});
+    if(s.ask) showHints(s.hints);              // 🗣 영어회화 — 늘 힌트를 붙인다
+    else if(LIVE && !txt(s.choices).length) showHints(null);
+  }
 }
 
 function meSaid(text,isKo){
@@ -728,6 +1208,38 @@ async function answer(text){
   const s=STEPS[i];
   const isKo=/[가-힣]/.test(text);
   meSaid(text,isKo);
+
+  // 🗣 따라 말하기 — 고쳐 주지 않는다. 소리 낸 것 자체가 100점.
+  if(s.practice){
+    await emmaSays(isKo ? `In English we say: "${txt(s.en)}" Try it with me!` : pick(NICE_REPEAT));
+    return;
+  }
+
+  // 🟢 진짜 대화 — 나율이가 무슨 말을 하든 Emma가 받아서 이어간다
+  if(LIVE && !s.intro && !s.last){
+    chat.push({role:'user',content:text});
+    $('miclabel').textContent='💭 Emma가 생각하는 중…';
+    try{
+      const res=await liveReply(chat);
+      chat.push({role:'assistant',content:res.text});
+      $('miclabel').textContent='눌러서 영어로 말해 봐 — 얼마든지 이어서 말해도 돼';
+      await emmaSays(res.text.trim());
+      showHints(res.hints.length?res.hints:s.hints);
+      return;
+    }catch(e){
+      LIVE=false; $('livetag') && $('livetag').classList.add('hidden');
+      $('miclabel').textContent='눌러서 영어로 말해 봐';
+      // 아래 기존 방식으로 이어서 답한다
+    }
+  }
+
+  // 🗣 영어회화 — 서버가 없을 때도 이어간다
+  if(s.ask){
+    await emmaSays(offlineReply(text,s.follows));
+    showHints(s.hints);
+    return;
+  }
+
   if(isKo){
     const model=(s.koModel&&s.koModel(text))||s.model();
     if(/모르|몰라/.test(text)) { await emmaSays("That's okay! You can pick one. "+txt(s.choices).filter(c=>!c.includes('…')).join(' Or ')+"?"); return; }
@@ -794,7 +1306,12 @@ function finish(){
   const mins=Math.max(1,Math.round((Date.now()-t0)/60000));
   $('praise').innerHTML=pick(PRAISE);
   $('log').innerHTML=log.map(l=>`<div class="${l.who==='나율'?'n':''}"><b>${l.who}</b> ${l.text.replace(/</g,'&lt;')}</div>`).join('');
-  const record={date:new Date().toISOString().slice(0,10),mins,series:state.series==='other'?state.title:SERIES[state.series].name,book:state.book,fav:state.fav||state.dragon||null,log};
+  const record={date:new Date().toISOString().slice(0,10),mins,
+    series: state.series==='parrot' ? ('🦜 따라 말하기 · '+state.title)
+          : state.series==='talk' ? ('🗣 영어회화 · '+state.title)
+          : state.series==='other' ? state.title
+          : (SERIES[state.series]?SERIES[state.series].name:'책'),
+    book:state.book,fav:state.fav||state.dragon||null,live:LIVE,log};
   try{ const all=JSON.parse(localStorage.getItem('emmaLogs')||'[]'); all.push(record); localStorage.setItem('emmaLogs',JSON.stringify(all)); }catch(e){}
   window._record=record;
   show('end');
@@ -804,10 +1321,107 @@ function recordText(r){
     r.log.map(l=>`${l.who}: ${l.text}${l.ko?' (한국어)':''}`).join('\n');
 }
 
+
+/* ================= 🎧 음원 듣기 =================
+   집에 있는 영어 음원(D:\영어 음원)을 이 컴퓨터 안에서만 듣는다.
+   공개 사이트에서는 서버가 없으니 버튼 자체가 안 보인다. */
+let AUDIO_OK=false, audioPath='', audioStack=[], AU=null, curTrack='';
+async function checkAudio(){
+  try{ const r=await fetch('audio/ping?who=emma',{cache:'no-store'}); if(!r.ok) return false; const j=await r.json(); return !!j.ok; }
+  catch(e){ return false; }
+}
+function tidyName(n){
+  let t=String(n).replace(/\.mp3$/i,'');
+  t=t.replace(/^[A-Za-z.\s]{4,30}\s-\s/,'');                 // 작가 이름
+  t=t.replace(/\s*-\s*[A-Za-z]+\s*\(Ch\)\s*$/i,'');          // 낭독자 표시
+  t=t.replace(/^BC\s*0*\d+\s*-?\s*/i,'');                    // 시리즈 코드
+  t=t.replace(/_/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-]+|[\s.\-]+$/g,'');
+  return t||String(n);
+}
+// 음원 폴더 이름을 책 제목으로 (A to Z처럼 한 글자면 시리즈 이름을 앞에 붙인다)
+function currentBookTitle(){
+  const parts=audioPath.split('/').filter(Boolean);
+  const last=parts[parts.length-1]||'';
+  let t=tidyName(last);
+  if(t.length<=2 && parts.length>=2){
+    const parent=tidyName(parts[parts.length-2]).replace(/\s*\([^)]*\)\s*/g,' ').trim();
+    const eng=parent.match(/[A-Za-z][A-Za-z0-9 '&.!-]{2,}/);
+    t=((eng?eng[0].trim():parent)+' · '+t).trim();
+  }
+  return t;
+}
+const fmt=s=>{ if(!isFinite(s)) return '0:00'; const m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+String(x).padStart(2,'0'); };
+
+async function openAudio(rel){
+  audioPath=rel||'';
+  const box=$('lstbox'); box.innerHTML='<div class="empty">불러오는 중…</div>';
+  $('crumb').textContent = audioPath ? audioPath.split('/').map(tidyName).join('  ›  ') : '음원 서재';
+  $('lstup').style.visibility = audioPath ? 'visible' : 'hidden';
+  let j;
+  try{ j=await (await fetch('audio/list?who=emma&p='+encodeURIComponent(audioPath),{cache:'no-store'})).json(); }
+  catch(e){ box.innerHTML='<div class="empty">음원을 불러오지 못했어요.</div>'; return; }
+  if(!j.items || !j.items.length){ box.innerHTML='<div class="empty">여기엔 파일이 없어요.</div>'; return; }
+  box.innerHTML='';
+  j.items.forEach(it=>{
+    const b=document.createElement('button'); b.className='lstitem';
+    const mins = it.type==='file' && it.size ? Math.max(1,Math.round(it.size/1000000*1.05))+'분쯤' : '';
+    b.innerHTML='<span class="ic">'+(it.type==='dir'?'📁':'🎵')+'</span><span class="nm"></span><span class="mn">'+mins+'</span>';
+    b.querySelector('.nm').textContent=tidyName(it.name);
+    if(it.type==='file' && it.path===curTrack) b.classList.add('playing');
+    b.onclick=()=> it.type==='dir' ? openAudio(it.path) : playTrack(it.path, tidyName(it.name));
+    box.appendChild(b);
+  });
+}
+
+function playTrack(rel,label){
+  curTrack=rel;
+  $('player').classList.remove('hidden');
+  $('ptitle').textContent=label;
+  if(AU){ AU.pause(); AU.src=''; }
+  AU=new Audio('audio/file?p='+encodeURIComponent(rel));
+  AU.preload='metadata';
+  let saved=0; try{ saved=parseFloat(localStorage.getItem('aupos:'+rel)||'0')||0; }catch(e){}
+  AU.addEventListener('loadedmetadata',()=>{ if(saved>3 && saved<AU.duration-5) AU.currentTime=saved; $('pdur').textContent=fmt(AU.duration); });
+  AU.addEventListener('timeupdate',()=>{
+    $('pnow').textContent=fmt(AU.currentTime);
+    $('pfill').style.width=(AU.duration?(AU.currentTime/AU.duration*100):0)+'%';
+    if(Math.floor(AU.currentTime)%5===0){ try{ localStorage.setItem('aupos:'+rel,String(AU.currentTime)); }catch(e){} }
+  });
+  AU.addEventListener('ended',()=>{ $('pplay').textContent='▶'; try{ localStorage.removeItem('aupos:'+rel); }catch(e){} });
+  AU.playbackRate=parseFloat($('player').dataset.rate||'1');
+  AU.play().then(()=>$('pplay').textContent='⏸').catch(()=>$('pplay').textContent='▶');
+  openAudio(audioPath);
+}
+function audioWire(){
+  $('lstup').onclick=()=>{ const p=audioPath.split('/'); p.pop(); openAudio(p.join('/')); };
+  $('pplay').onclick=()=>{ if(!AU) return; if(AU.paused){ AU.play(); $('pplay').textContent='⏸'; } else { AU.pause(); $('pplay').textContent='▶'; } };
+  $('pback').onclick=()=>{ if(AU) AU.currentTime=Math.max(0,AU.currentTime-10); };
+  $('pfwd').onclick=()=>{ if(AU) AU.currentTime=Math.min(AU.duration||0,AU.currentTime+10); };
+  $('pbar').onclick=e=>{ if(!AU||!AU.duration) return; const r=e.currentTarget.getBoundingClientRect(); AU.currentTime=(e.clientX-r.left)/r.width*AU.duration; };
+  document.querySelectorAll('.prate').forEach(b=>b.onclick=()=>{
+    const v=parseFloat(b.dataset.rate); $('player').dataset.rate=v; if(AU) AU.playbackRate=v;
+    document.querySelectorAll('.prate').forEach(x=>x.classList.toggle('on',x===b));
+  });
+}
+function stopAudio(){ if(AU){ AU.pause(); } }
 /* ---------------- 버튼 ---------------- */
 $('go').onclick=async()=>{
   $('go').textContent='목소리 준비 중…';
   await loadVoice(); showVoice();
+  if(MODE==='parrot' || MODE==='talk'){
+    const isParrot = MODE==='parrot';
+    state={book:null,series:MODE,title:TALK_SETS[topic].name};
+    STEPS = isParrot ? parrotSteps(topic) : freeTalkSteps(topic);
+    bookAdded=false; chat=[];
+    $('booktag').textContent=(isParrot?'🦜 ':'🗣 ')+TALK_SETS[topic].name;
+    i=0; log=[]; startTimer(); show('talk'); renderStep();
+    $('go').textContent='▶ 시작하기';
+    return;
+  }
+  if(series==='box'){
+    const n=parseInt($('boxBookNo').value,10);
+    if(n>=1 && n<=19){ boxBook=n; try{localStorage.setItem('emmaBoxBook',String(n));}catch(e){} }
+  }
   if(series==='other'){
     otherTitle=$('otherTitle').value.trim();
     if(!otherTitle){ $('go').textContent='▶ 시작하기'; $('otherTitle').focus(); $('otherTitle').placeholder='책 제목을 먼저 적어 줘!'; return; }
@@ -829,6 +1443,19 @@ $('send').onclick=()=>{const v=$('typed').value.trim(); if(v){$('typed').value='
 $('typed').onkeydown=e=>{ if(e.key==='Enter') $('send').click(); };
 $('copy').onclick=async()=>{ try{ await navigator.clipboard.writeText(recordText(window._record)); $('copy').textContent='✅ 복사했어요 — 나도 창에 붙여 주세요'; }catch(e){ $('copy').textContent='복사 실패 — 화면 기록을 보여 주세요'; } };
 renderBooks();
+audioWire();
+$('listenBtn').onclick=()=>{ show('listen'); openAudio(''); };
+$('lstBack').onclick=()=>show('start');
+$('lstTalk').onclick=()=>{
+  const title=currentBookTitle();
+  if(/boxcar/i.test(audioPath)){ series='box'; }
+  else { series='other'; otherTitle=title; try{localStorage.setItem('emmaOtherTitle',title);}catch(e){} }
+  try{localStorage.setItem('emmaSeries',series);}catch(e){}
+  MODE='book'; try{localStorage.setItem('emmaMode','book');}catch(e){}
+  show('start'); renderBooks(); $('go').click();
+};
+checkAudio().then(ok=>{ AUDIO_OK=ok; $('listenBtn').classList.toggle('hidden',!ok); });
+checkLive().then(ok=>{ LIVE=ok; if(ok) $('booktag').textContent='🟢 진짜 대화 준비됨'; });
 /* ---- 꾸미기 화면 ---- */
 function renderOpts(){
   const box=$('opts'); box.innerHTML='';
