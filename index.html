@@ -85,6 +85,9 @@
   .miclabel{font-size:17px;color:var(--soft)}
   .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
   .next{font-size:20px;font-weight:800;border:0;border-radius:999px;padding:12px 30px;background:var(--cream);color:var(--ink);cursor:pointer;font-family:inherit}
+  .next.done{background:var(--gold);animation:pulse 1.4s infinite}
+  #vwarn{margin:0 16px 8px;padding:12px 16px;border-radius:14px;background:rgba(239,83,80,.22);
+         border:2px solid #ef5350;font-size:15px;line-height:1.55;cursor:pointer}
 
   .mom{margin-top:26px;text-align:center}
   .mom summary{cursor:pointer;color:var(--soft);font-size:14px}
@@ -148,6 +151,7 @@
   <span class="sp"></span>
   <span id="timer"></span>
 </header>
+<div id="vwarn" class="hidden"></div>
 
 <main>
   <!-- 시작 -->
@@ -166,6 +170,15 @@
       <span style="font-size:15px;opacity:.8;white-space:nowrap">박스카 몇 권까지 읽었어?</span>
       <input id="boxBookNo" type="number" min="1" max="19" style="width:90px">
       <span style="font-size:15px;opacity:.8">권</span>
+    </div>
+    <div class="otherrow hidden" id="mthRow" style="align-items:center;gap:8px">
+      <span style="font-size:15px;opacity:.8;white-space:nowrap">매직트리하우스 몇 권까지 읽었어?</span>
+      <input id="mthBookNo" type="number" min="1" max="28" style="width:90px">
+      <span style="font-size:15px;opacity:.8">권</span>
+    </div>
+    <div class="otherrow hidden" id="aesopRow">
+      <div style="font-size:15px;opacity:.8;margin-bottom:6px">어떤 이야기를 들었어?</div>
+      <select id="aesopPick" style="width:100%;font-size:17px;padding:12px 14px;border-radius:14px;border:3px solid var(--gold);font-family:inherit"></select>
     </div>
     <button class="big" id="go">▶ 시작하기</button>
     <div style="margin-top:14px"><button class="sm" id="dressBtn">👗 Emma 꾸미기</button>
@@ -404,27 +417,62 @@ const Emma=(()=>{
 })();
 Emma.init();
 
-/* ---------------- 목소리 ---------------- */
+/* ---------------- 목소리 ----------------
+   이 컴퓨터에 깔린 목소리는 한국어(Heami)·일본어뿐이다. 영어 목소리는
+   엣지가 인터넷에서 받아오는 "Online (Natural)" 뿐인데, 이게 몇 초 늦게 도착한다.
+   그 사이에 말을 시키면 윈도우가 기본 목소리(한국어)로 영어를 읽어 버린다 → 발음이 엉망이 된다.
+   그래서 ①목소리가 올 때까지 기다리고 ②늦게 와도 그때 잡고
+   ③끝내 영어 목소리가 없으면 한국어 목소리로 영어를 읽지 않고 화면에 알린다. */
 const PREFS=['Ana Online (Natural)','Ava Online (Natural)','Emma Online (Natural)','Jenny Online (Natural)','Aria Online (Natural)','Natural'];
-let VOICE=null;
+let VOICE=null, KOVOICE=null, voiceHooked=false, voiceWaiting=null;
+const allVoices=()=>{ try{ return speechSynthesis.getVoices()||[]; }catch(e){ return []; } };
+const enVoices=()=>allVoices().filter(v=>/^en/i.test(v.lang||''));
 function pickVoice(){
-  const vs=speechSynthesis.getVoices().filter(v=>v.lang.startsWith('en'));
-  for(const p of PREFS){const v=vs.find(x=>x.name.includes(p)); if(v) return v;}
-  return vs[0]||null;
+  const vs=enVoices();
+  for(const p of PREFS){ const v=vs.find(x=>(x.name||'').includes(p)); if(v) return v; }
+  return vs.find(v=>/^en-US/i.test(v.lang)) || vs[0] || null;   // 자연 음성이 없으면 영어면 아무거나(Zira 등)
 }
+function pickKoVoice(){
+  const vs=allVoices().filter(v=>/^ko/i.test(v.lang||''));
+  return vs.find(v=>/Natural/i.test(v.name||'')) || vs[0] || null;
+}
+function rescan(){ VOICE=pickVoice(); KOVOICE=pickKoVoice(); showVoice(); return VOICE; }
 function loadVoice(){
-  return new Promise(res=>{
-    VOICE=pickVoice(); if(VOICE) return res();
-    speechSynthesis.onvoiceschanged=()=>{VOICE=pickVoice(); if(VOICE) res();};
-    setTimeout(res,2000);
+  if(VOICE) { showVoice(); return Promise.resolve(); }
+  if(voiceWaiting) return voiceWaiting;
+  voiceWaiting=new Promise(res=>{
+    let done=false;
+    const tryPick=()=>{ rescan(); if(VOICE && !done){ done=true; clearInterval(iv); voiceWaiting=null; res(); } };
+    if(!voiceHooked){ voiceHooked=true; try{ speechSynthesis.addEventListener('voiceschanged',()=>rescan()); }catch(e){} }
+    const iv=setInterval(tryPick,250);          // 엣지 온라인 목소리는 몇 초 뒤에 도착한다
+    tryPick();
+    setTimeout(()=>{ if(!done){ done=true; clearInterval(iv); voiceWaiting=null; res(); } },8000);
   });
+  return voiceWaiting;
 }
-function showVoice(){ document.getElementById('voice').textContent = VOICE ? '목소리: '+VOICE.name : '목소리를 못 찾았어요 (인터넷 연결 확인)'; }
+function showVoice(){
+  const f=document.getElementById('voice');
+  if(f) f.textContent = VOICE ? ('목소리: '+VOICE.name+(/Natural/i.test(VOICE.name)?'':' · 자연 음성 아님'))
+                              : '영어 목소리를 찾는 중… (인터넷 연결 확인 · 눌러서 다시 찾기)';
+  const w=document.getElementById('vwarn');
+  if(w){
+    w.classList.toggle('hidden',!!VOICE);
+    if(!VOICE) w.innerHTML='🔇 <b>영어 목소리를 못 찾았어요.</b> 이 컴퓨터엔 한국어·일본어 목소리뿐이라, '
+      +'영어 목소리(엣지 자연 음성)는 인터넷에서 받아옵니다.<br>인터넷을 확인하고 <b>여기를 눌러 다시 찾기</b>. '
+      +'한국어 목소리로 영어를 읽으면 발음이 이상해져서, 찾을 때까지 영어는 소리 내지 않아요.';
+  }
+}
 function say(text,rate=0.92){
   return new Promise(res=>{
     speechSynthesis.cancel();
+    const isKo=/[가-힣]/.test(text);
+    if(!VOICE) VOICE=pickVoice();                  // 늦게 도착한 목소리를 그때라도 잡는다
+    if(isKo && !KOVOICE) KOVOICE=pickKoVoice();
+    const v = isKo ? KOVOICE : VOICE;
+    // 영어인데 영어 목소리가 없으면 읽지 않는다 — 한국어 목소리로 읽으면 발음을 잘못 배운다
+    if(!isKo && !v){ showVoice(); return res(); }
     const u=new SpeechSynthesisUtterance(text);
-    if(VOICE){u.voice=VOICE;u.lang=VOICE.lang;} else u.lang='en-US';
+    if(v){ u.voice=v; u.lang=v.lang; } else u.lang = isKo ? 'ko-KR' : 'en-US';
     u.rate=rate; u.pitch=1.05;
     u.onstart=()=>Emma.talk(true);
     u.onboundary=()=>Emma.pulse();
@@ -670,22 +718,7 @@ function charSteps(pron, koMap){
   ];
 }
 
-/* ---- Magic Tree House — Jack·Annie·Morgan, 나무 집이 책 속 장소로 데려간다는 설정만 ---- */
-const MTH_STEPS=()=>[
-  helloStep("Magic Tree House"), numberStep("Magic Tree House"),
-  ...charSteps({Jack:'he',Annie:'she',Morgan:'she'},[[/잭/,'Jack'],[/애니|에니/,'Annie'],[/모건|모간/,'Morgan']]),
-  {en:"Where did Jack and Annie go in your book?", ko:"네 책에서 잭이랑 애니는 어디에 갔어?",
-   choices:["They went to …"], chipsNoSpeak:true, model:()=>"They went to …",
-   react:()=>pick(["Wow, what a trip!","Ooh, that sounds amazing!"]), follow:"Would you like to go there too?"},
-  {en:"Jack loves books and notes. Annie is brave. Are you more like Jack? Or Annie?", ko:"잭은 책이랑 메모를 좋아하고, 애니는 용감해. 너는 잭이랑 더 닮았어? 애니랑 더 닮았어?",
-   choices:["I am like Jack.","I am like Annie."], model:()=>"I am like Annie.",
-   koModel:t=>/잭/.test(t)?"I am like Jack.":/애니/.test(t)?"I am like Annie.":null,
-   react:t=>/jack/i.test(t)?"Like Jack! Smart and careful!":/annie/i.test(t)?"Like Annie! Brave and fun!":"Oh, interesting!", follow:"Why?"},
-  {en:"If you had a magic tree house, where would you go?", ko:"너한테 마법 나무 집이 있다면 어디에 가고 싶어?",
-   choices:["I would go to …"], chipsNoSpeak:true, model:()=>"I would go to the ocean.",
-   react:t=>{const m=clean(t).match(/go to\s+(.+)/i); return m?`${cap(m[1])}! Take me with you!`:"Take me with you!";}, follow:"What would you do there?"},
-  ...commonQs()
-];
+/* ---- Magic Tree House 는 아래 mthSteps() 로 옮겼다 (박스카와 같은 줄거리 따라가기 방식) ---- */
 
 /* ---- Junie B. Jones — Junie B.·친구 Lucille·Grace, 학교 이야기 ---- */
 const JBJ_STEPS=()=>[
@@ -1071,10 +1104,32 @@ const BOX_WALK={
 };
 const WALK_FOLLOWS=["And then what?","What happened next?","Ooh, tell me more about that!","Really? Keep going!","Who else was there?","What did they say?"];
 
+// 아직 토막을 적어 두지 않은 권(5권 이상)에 쓰는 뼈대 질문.
+// 박스카는 매 권이 '어디론가 간다 → 이상한 일 → 단서 → 알아낸다'로 굴러간다.
+// Emma는 내용을 하나도 모른 채 순서대로 묻기만 한다 — 지어낼 자리가 없다.
+const BOX_GENERIC=[
+ {en:"Let's go through this one from the very start. Where were the Aldens at the beginning, and where were they going?",
+  ko:"이 권도 처음부터 같이 따라가 보자. 시작할 때 앨든 남매는 어디 있었고, 어디로 가는 길이었어?", hints:W_START},
+ {en:"Who did they meet there? Tell me about them.",
+  ko:"거기서 누구를 만났어? 그 사람들 얘기해 줘.", hints:H_WHO},
+ {en:"Something didn't add up — that's how these books go. What was strange this time?",
+  ko:"뭔가 이상했지 — 이 책은 늘 그렇잖아. 이번엔 뭐가 이상했어?", hints:["It was strange that...","Nobody knew...","Something kept..."]},
+ {en:"What was the first clue they found?",
+  ko:"처음 찾은 단서는 뭐였어?", hints:["They found...","The first clue was...","I think..."]},
+ {en:"Which of the four did the most digging around this time — Henry, Jessie, Violet, or Benny?",
+  ko:"이번엔 넷 중에 누가 제일 많이 파고들었어? 헨리, 제시, 바이올렛, 베니?", hints:H_WHO},
+ {en:"Was there a moment that made you nervous? Tell me that part.",
+  ko:"조마조마했던 순간 있었어? 그 부분 얘기해 줘.", hints:W_THEN},
+ {en:"So how did they finally solve it?",
+  ko:"그래서 결국 어떻게 풀어냈어?", hints:["They figured out...","In the end they...","It turned out..."]},
+ {en:"And how does this one end?",
+  ko:"이 권은 어떻게 끝나?", hints:W_END}
+];
+
 function boxSteps(){
   const read=Math.max(1,Math.min(19,boxBook||4));
   const next=read+1;
-  const walk=BOX_WALK[read]||[];
+  const walk=BOX_WALK[read]||BOX_GENERIC;
   // 지난 권에서 한두 개만 — 기억을 되살리는 자리
   let older=[];
   for(let k=1;k<read;k++) if(BOX_ASKS[k]) older=older.concat(BOX_ASKS[k].map(q=>({...q,bk:k})));
@@ -1110,13 +1165,197 @@ function boxSteps(){
     choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma!", last:true, react:()=>"Bye, Nayul!"});
   return steps;
 }
+/* ---------------- 🌳 매직트리하우스 — 박스카와 같은 방식 ----------------
+   읽은 권까지만 이야기하고, 줄거리는 Emma가 한 토막씩 물어서 끝까지 데려간다.
+   박스카와 다른 점 하나: 28권이라 권별 토막을 미리 적어 둘 수 없다.
+   대신 이 시리즈는 매 권의 뼈대가 똑같다 —
+   나무 집 → 어느 때 어느 곳 → 해야 할 일 → 위험 → 해결 → 집으로.
+   그 뼈대만 가지고 순서대로 묻는다. Emma는 내용을 모르고, 나율이가 채운다.
+   음원이 챕터 단위라서, 한 챕터만 듣고 왔으면 그 챕터만 이야기한다(과제를 더 작게). */
+const MTH_TITLES={1:"Dinosaurs Before Dark",2:"The Knight at Dawn",3:"Mummies in the Morning",
+ 4:"Pirates Past Noon",5:"Night of the Ninjas",6:"Afternoon on the Amazon",
+ 7:"Sunset of the Sabertooth",8:"Midnight on the Moon",9:"Dolphins at Daybreak",
+ 10:"Ghost Town at Sundown",11:"Lions at Lunchtime",12:"Polar Bears Past Bedtime",
+ 13:"Vacation Under the Volcano",14:"Day of the Dragon King",15:"Viking Ships at Sunrise",
+ 16:"Hour of the Olympics",17:"Tonight on the Titanic",18:"Buffalo Before Breakfast",
+ 19:"Tigers at Twilight",20:"Dingoes at Dinnertime",21:"Civil War on Sunday",
+ 22:"Revolutionary War on Wednesday",23:"Twister on Tuesday",24:"Earthquake in the Early Morning",
+ 25:"Stage Fright on a Summer Night",26:"Good Morning, Gorillas",27:"Thanksgiving on Thursday",
+ 28:"High Tide in Hawaii"};
+
+const MTH_WALK=[
+ {en:"Let's go through it from the very start. Before the tree house took them anywhere — where were Jack and Annie, and what were they doing?",
+  ko:"처음부터 같이 따라가 보자. 나무 집이 데려가기 전에, 잭이랑 애니는 어디서 뭘 하고 있었어?", hints:W_START},
+ {en:"Then the tree house starts spinning. Where did it take them this time — what place, and what time?",
+  ko:"그러다 나무 집이 빙글빙글 돌지. 이번엔 어디로 데려갔어? 어느 곳, 어느 시대?", hints:["They went to...","They landed in...","It was a place with..."]},
+ {en:"They climb down the ladder. What was the first thing they saw?",
+  ko:"사다리를 타고 내려가지. 제일 먼저 뭘 봤어?", hints:["They saw...","The first thing was...","There was..."]},
+ {en:"Did they have a job to do — something to find, or someone to help? What was it?",
+  ko:"거기서 할 일이 있었어? 찾아야 할 것이나 도와야 할 사람. 뭐였어?", hints:["They had to...","They were looking for...","Morgan wanted them to..."]},
+ {en:"Who did they meet there? Tell me about them.",
+  ko:"거기서 누구를 만났어? 그 사람 얘기해 줘.", hints:H_WHO},
+ {en:"Something goes wrong in every single book. What went wrong in this one?",
+  ko:"매 권마다 꼭 일이 터지잖아. 이번 권에선 무슨 일이 터졌어?", hints:["Suddenly...","They almost...","The scary part was..."]},
+ {en:"How did they get out of it? Was it Jack's idea, or Annie's?",
+  ko:"어떻게 빠져나왔어? 잭의 생각이었어, 애니의 생각이었어?", hints:["Jack...","Annie...","They..."]},
+ {en:"And how does it end? What did they bring back to the tree house with them?",
+  ko:"끝은 어떻게 나? 나무 집으로 뭘 가지고 돌아왔어?", hints:W_END}
+];
+// 챕터 하나만 듣고 왔을 때 — 그 챕터만 이야기한다
+const MTH_CHAPTER=c=>[
+ {en:`So — chapter ${c}. What happened in it? Start from the very first thing.`,
+  ko:`자 — 챕터 ${c}. 무슨 일이 있었어? 맨 처음 장면부터.`, hints:W_START},
+ {en:"Who was in that chapter?",
+  ko:"그 챕터엔 누가 나왔어?", hints:H_WHO},
+ {en:"Was there a moment where you thought 'uh oh'? Tell me that part.",
+  ko:"'어떡해' 싶었던 순간 있었어? 그 부분 얘기해 줘.", hints:["Yes, when...","Not really, but...","The part where..."]},
+ {en:"How did the chapter end?",
+  ko:"그 챕터는 어떻게 끝났어?", hints:W_END},
+ {en:"What do you think happens in the next chapter?",
+  ko:"다음 챕터엔 무슨 일이 일어날 것 같아?", hints:["I think they'll...","Maybe...","Probably..."]}
+];
+// 읽은 권들을 가로지르는 되짚기 — 권별 사실이 아니라 '지금까지 읽은 것' 안에서 고르게 한다
+const MTH_BACK=[
+ {en:"Out of all the trips you've read so far, which one would you actually want to go on?",
+  ko:"지금까지 읽은 여행 중에서 진짜로 가 보고 싶은 건 어느 거야?", hints:["I'd want to go to...","Probably the one with...","Definitely..."]},
+ {en:"Which book was the scariest so far?",
+  ko:"지금까지 중에 제일 무서웠던 권은 뭐야?", hints:["The scariest was...","I think...","Maybe the one where..."]},
+ {en:"Jack writes everything in his notebook. If you went on one of these trips, what would you write down?",
+  ko:"잭은 공책에 다 적잖아. 네가 그런 여행을 간다면 뭘 적을 거야?", hints:["I would write...","I'd draw...","Probably..."]},
+ {en:"Annie runs in first and Jack wants to read about it first. Which one are you more like?",
+  ko:"애니는 먼저 뛰어들고, 잭은 먼저 찾아보잖아. 너는 누구랑 더 닮았어?", hints:["I'm more like...","Honestly, I'm...","It depends, but..."]},
+ {en:"Was there a book where you learned something real — something that actually happened long ago?",
+  ko:"진짜 있었던 일을 알게 된 권도 있었어?", hints:["Yes, I learned that...","I didn't know that...","Kind of, but..."]},
+ {en:"If Morgan sent you on one mission, where would you want to be sent?",
+  ko:"모건이 너한테 임무 하나를 준다면 어디로 가고 싶어?", hints:["I'd want to go...","Send me to...","Somewhere with..."]}
+];
+let mthBook=1, audioChapter=null;
+try{ mthBook=parseInt(localStorage.getItem('emmaMthBook')||'1',10)||1; }catch(e){}
+
+function mthSteps(){
+  const read=Math.max(1,Math.min(28,mthBook||1));
+  const next=read+1;
+  const ch=audioChapter; audioChapter=null;      // 음원에서 넘어왔을 때만 한 번 쓴다
+  const title=MTH_TITLES[read]||'';
+  const walk=ch?MTH_CHAPTER(ch):MTH_WALK;
+  const label=ch?`챕터 ${ch} 이야기`:'줄거리 따라가기';
+  const steps=[
+   {en:`Hi Nayul! It's me, Emma. Magic Tree House number ${read} — "${title}"! ${ch?`You just listened to chapter ${ch}, right? Tell me about that part.`:`Let's walk through the whole trip together, bit by bit.`}`,
+    ko:`안녕 나율! 나 Emma야. 매직트리하우스 ${read}권 — "${title}"! ${ch?`방금 챕터 ${ch} 들었지? 그 부분 얘기해 줘.`:`여행을 처음부터 한 토막씩 같이 따라가 보자.`}`,
+    choices:["Hi Emma!","Okay!"], model:()=>"Hi Emma!", react:()=>"Yay! I want to hear all of it."},
+   {en:`Quick one first — was ${ch?'that chapter':'this one'} scary, funny, or exciting?`,
+    ko:`먼저 하나만 — ${ch?'그 챕터':'이번 건'} 무서웠어, 웃겼어, 신났어?`,
+    choices:["Scary!","Funny!","Exciting!"], model:()=>"It was exciting!",
+    koModel:t=>/무서/.test(t)?"It was scary!":/웃/.test(t)?"It was funny!":/신나|재밌/.test(t)?"It was exciting!":null,
+    react:t=>{const w=['scary','funny','exciting'].find(x=>new RegExp(x,'i').test(t)); return w?`${cap(w)}! Okay, now I really want to hear it.`:"Ooh, okay!";},
+    follow:"What made it feel that way?"},
+   ...walk.map((q,k)=>({en:q.en, ko:`📖 ${label} ${k+1}/${walk.length} · ${q.ko}`,
+     choices:[], ask:true, hints:q.hints, follows:WALK_FOLLOWS})),
+   ...shuffle(MTH_BACK).slice(0,2).map(q=>({en:`By the way — ${q.en}`, ko:`그러고 보니 — ${q.ko}`,
+     choices:[], ask:true, hints:q.hints}))
+  ];
+  if(ch){
+    steps.push({en:`Go listen to the next chapter, and come back and tell me what happens. I really want to know!`,
+      ko:`다음 챕터 듣고 와서 무슨 일이 있었는지 말해 줘. 진짜 궁금해!`,
+      choices:["Okay!","I will!"], model:()=>"Okay, I will!", react:()=>"Yes! I'll be waiting."});
+  }else if(next<=28 && MTH_TITLES[next]){
+    // 다음 권은 제목만. 무슨 일이 일어나는지는 Emma도 모른다 — 그래서 나율이가 추측한다.
+    steps.push({en:`You told me the whole trip, Nayul! Okay — book ${next} is called "${MTH_TITLES[next]}". That's all I know, just the title. Where do you think that one takes them?`,
+      ko:`너 방금 여행을 통째로 다 말한 거야, 나율! 자 — 다음 ${next}권 제목은 "${MTH_TITLES[next]}". 내가 아는 건 제목뿐이야. 이번엔 어디로 갈 것 같아?`,
+      choices:[], ask:true, hints:["Maybe they go to...","I think it's about...","Probably somewhere with..."]});
+    steps.push({en:"Read it and come back — we'll walk through that one too. Deal?",
+      ko:"읽고 와. 그 권도 같이 한 토막씩 따라가자. 약속?",
+      choices:["Deal!","Okay!"], model:()=>"Deal!", react:()=>"Yes! I can't wait."});
+  }
+  const praised = !ch && next<=28 && MTH_TITLES[next];   // 맛보기 자리에서 이미 칭찬했으면 겹치지 않게
+  steps.push({en:`${praised?'':(ch?'You told me that whole chapter, Nayul! ':'You told me the whole trip, Nayul! ')}You remembered so much. ${ch?'See you after the next one!':'Go climb that tree house again! Bye!'}`,
+    ko:`${praised?'':(ch?'그 챕터를 통째로 다 말했어, 나율! ':'여행을 통째로 다 말했어, 나율! ')}진짜 많이 기억하고 있구나. ${ch?'다음 챕터 듣고 또 보자!':'얼른 나무 집에 또 올라가 봐! 안녕!'}`,
+    choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma!", last:true, react:()=>"Bye, Nayul!"});
+  return steps;
+}
+
+/* ---------------- 🦊 이솝우화 — 한 편 듣고 바로 이야기하기 ----------------
+   여기는 '권'이 아니라 '이야기 한 편'이 단위다. 2~4분짜리라
+   듣기 → 무슨 일이 있었는지 말하기 → 어떻게 생각하는지 까지 한자리에서 된다.
+   교훈 이야기라서 마지막에 '네 생각은?'이 진짜 내용이 있는 질문이 된다 —
+   나율이가 의견을 말하고 이유를 대는 연습 자리로 쓴다.
+   Emma가 아는 건 제목뿐이다. 무슨 일이 있었는지는 나율이가 알려 준다. */
+/* who/kw = 제목만 보고 짐작하는 말 · main/km = 이야기를 물을 때 가리키는 주인공 · pl = 복수(were) */
+const AESOP=[
+ {b:1,n:1,en:"The Fox Without a Tail",ko:"꼬리 없는 여우",who:"a fox",kw:"여우",main:"the fox",km:"여우는"},
+ {b:1,n:2,en:"The Shepherd Boy and the Wolf",ko:"양치기 소년과 늑대",who:"a shepherd boy and a wolf",kw:"양치기 소년이랑 늑대",main:"the boy",km:"그 소년은"},
+ {b:1,n:3,en:"The Boastful Traveler",ko:"자랑하기 좋아하는 여행자",who:"a traveler who loves to brag",kw:"자랑 많은 여행자",main:"the traveler",km:"그 여행자는"},
+ {b:1,n:4,en:"The Crow and the Fox",ko:"까마귀와 여우",who:"a crow and a fox",kw:"까마귀랑 여우",main:"the crow",km:"까마귀는"},
+ {b:1,n:5,en:"Who Will Bell the Cat",ko:"누가 고양이에게 방울을 달까",who:"some mice and a cat",kw:"쥐들이랑 고양이",main:"the mice",km:"쥐들은",pl:true},
+ {b:1,n:6,en:"The Crow and the Swan",ko:"까마귀와 백조",who:"a crow and a swan",kw:"까마귀랑 백조",main:"the crow",km:"까마귀는"},
+ {b:1,n:7,en:"The Wolf and the Lamb",ko:"늑대와 새끼 양",who:"a wolf and a little lamb",kw:"늑대랑 새끼 양",main:"the wolf",km:"늑대는"},
+ {b:1,n:8,en:"The Lion and the Rabbit",ko:"사자와 토끼",who:"a lion and a rabbit",kw:"사자랑 토끼",main:"the lion",km:"사자는"},
+ {b:2,n:1,en:"Brother and Sister",ko:"오빠와 여동생",who:"a brother and a sister",kw:"오빠랑 여동생",main:"the brother",km:"오빠는"},
+ {b:2,n:2,en:"The Goose that Laid the Golden Eggs",ko:"황금 알을 낳았던 거위",who:"a goose that lays golden eggs",kw:"황금 알을 낳는 거위",main:"the goose",km:"거위는"},
+ {b:2,n:3,en:"The Wind and the Sun",ko:"바람과 해",who:"the wind and the sun",kw:"바람이랑 해",main:"the wind",km:"바람은"},
+ {b:2,n:4,en:"The Trees and the Axe",ko:"나무들과 도끼",who:"some trees and an axe",kw:"나무들이랑 도끼",main:"the trees",km:"나무들은",pl:true},
+ {b:2,n:5,en:"The Dog and His Reflection",ko:"개와 그 자신의 그림자",who:"a dog and his reflection in the water",kw:"개랑 물에 비친 모습",main:"the dog",km:"개는"},
+ {b:2,n:6,en:"The Fir Tree and the Bramble",ko:"전나무와 가시덤불",who:"a fir tree and a bramble bush",kw:"전나무랑 가시덤불",main:"the fir tree",km:"전나무는"},
+ {b:2,n:7,en:"The Ant and the Dove",ko:"개미와 비둘기",who:"an ant and a dove",kw:"개미랑 비둘기",main:"the ant",km:"개미는"},
+ {b:2,n:8,en:"The Boys and the Frogs",ko:"소년들과 개구리들",who:"some boys and some frogs",kw:"소년들이랑 개구리들",main:"the boys",km:"소년들은",pl:true},
+ {b:3,n:1,en:"The Raven and the Jug",ko:"까마귀와 물병",who:"a raven and a jug",kw:"까마귀랑 물병",main:"the raven",km:"까마귀는"},
+ {b:3,n:2,en:"The Dog in the Manger",ko:"구유 안의 개",who:"a dog in a manger",kw:"구유 안의 개",main:"the dog",km:"개는"},
+ {b:3,n:3,en:"The Fox and the Grapes",ko:"여우와 포도",who:"a fox and some grapes",kw:"여우랑 포도",main:"the fox",km:"여우는"},
+ {b:3,n:4,en:"The Wolves and the Dogs",ko:"늑대들과 개들",who:"wolves and dogs",kw:"늑대들이랑 개들",main:"the wolves",km:"늑대들은",pl:true},
+ {b:3,n:5,en:"The Fox and the Lion",ko:"여우와 사자",who:"a fox and a lion",kw:"여우랑 사자",main:"the fox",km:"여우는"},
+ {b:3,n:6,en:"The Bear and the Travelers",ko:"곰과 여행자들",who:"a bear and two travelers",kw:"곰이랑 여행자들",main:"the bear",km:"곰은"},
+ {b:3,n:7,en:"The Fox and the Stork",ko:"여우와 황새",who:"a fox and a stork",kw:"여우랑 황새",main:"the fox",km:"여우는"},
+ {b:3,n:8,en:"The Man and the Bird",ko:"남자와 새",who:"a man and a bird",kw:"남자랑 새",main:"the man",km:"그 남자는"}
+];
+let aesopIdx=0;
+try{ aesopIdx=parseInt(localStorage.getItem('emmaAesop')||'0',10)||0; }catch(e){}
+if(!AESOP[aesopIdx]) aesopIdx=0;
+
+function aesopSteps(){
+  const f=AESOP[aesopIdx]||AESOP[0];
+  const M=f.main, K=f.km||f.main, WAS=f.pl?'were':'was';
+  const body=[
+   {en:`I only know the title, so I'm guessing there's ${f.who} in it. Who else did you hear in the story?`,
+    ko:`난 제목만 알아. ${f.kw||f.who} 나오는 것 같은데, 또 누가 나왔어?`, hints:H_WHO},
+   {en:`Okay, from the beginning — what ${WAS} ${M} doing when the story starts?`,
+    ko:`자, 처음부터 — 이야기가 시작될 때 ${K} 뭘 하고 있었어?`, hints:W_START},
+   {en:"And then what happened? This is the part I really want to hear.",
+    ko:"그러고 나서 무슨 일이 있었어? 이 부분이 제일 궁금해.", hints:W_THEN},
+   {en:`How did it end? What happened to ${M}?`,
+    ko:`어떻게 끝났어? ${K} 어떻게 됐어?`, hints:W_END},
+   {en:`Why did ${M} do that, do you think?`,
+    ko:`${K} 왜 그랬을까?`, hints:H_WHY},
+   {en:"Aesop always hides a lesson in these. What do you think this story is trying to tell us?",
+    ko:"이솝 이야기엔 늘 교훈이 숨어 있잖아. 이 이야기는 뭘 말하려는 것 같아?",
+    hints:["I think it means...","It teaches us that...","Maybe it's about..."]},
+   {en:"Do you agree with it? Or do you see it differently?",
+    ko:"너도 그렇게 생각해? 아니면 좀 다르게 생각해?",
+    hints:["I agree because...","Not really, because...","Kind of, but..."]},
+   {en:`Last one — tell me the whole story in three sentences. Beginning, middle, end. You already told me all of it, so this is the easy part!`,
+    ko:"마지막 — 이야기를 세 문장으로 말해 줘. 처음, 중간, 끝. 아까 다 말했으니까 이건 쉬운 거야!",
+    hints:["First... Then... At the end...","It's about...","So basically..."], follows:WALK_FOLLOWS}
+  ];
+  return [
+   {en:`Hi Nayul! It's me, Emma. You just listened to "${f.en}"! I know the title but I have no idea what happens. Will you tell me?`,
+    ko:`안녕 나율! 나 Emma야. 방금 "${f.en}"(${f.ko}) 들었구나! 제목은 아는데 무슨 얘긴지는 전혀 몰라. 나한테 얘기해 줄래?`,
+    choices:["Okay!","Sure!"], model:()=>"Okay, I will!", react:()=>"Yay! I'm listening."},
+   ...body.map((q,k)=>({en:q.en, ko:`🦊 ${k+1}/${body.length} · ${q.ko}`,
+     choices:[], ask:true, hints:q.hints, follows:q.follows||WALK_FOLLOWS})),
+   {en:"You told me the whole story and what you think about it. That's a lot of talking, Nayul! Go listen to another one. Bye!",
+    ko:"이야기도 다 해 주고, 네 생각까지 말해 줬어. 진짜 많이 말한 거야, 나율! 다른 이야기도 들으러 가. 안녕!",
+    choices:["Bye, Emma!","See you!"], model:()=>"Bye, Emma!", last:true, react:()=>"Bye, Nayul!"}
+  ];
+}
+
+/* audio: 🎧 음원 폴더 이름과 이어 주는 표시 — 들은 폴더를 보고 이 시리즈로 바로 넘어간다 */
 const SERIES={
-  box:{name:"The Boxcar Children", e:"🚃", ko:"박스카 칠드런", steps:()=>boxSteps()},
-  mth:{name:"Magic Tree House", e:"🌳", ko:"매직 트리 하우스", steps:MTH_STEPS},
-  jbj:{name:"Junie B. Jones", e:"🎒", ko:"주니 비 존스", steps:JBJ_STEPS},
-  mw:{name:"Mercy Watson", e:"🐷", ko:"머시 왓슨", steps:MW_STEPS},
+  box:{name:"The Boxcar Children", e:"🚃", ko:"박스카 칠드런", steps:()=>boxSteps(), audio:/박스카|boxcar/i},
+  mth:{name:"Magic Tree House", e:"🌳", ko:"매직 트리 하우스", steps:mthSteps, audio:/magic[\s_]*tree|매직[\s_]*트리/i},
+  aesop:{name:"Aesop's Fables", e:"🦊", ko:"이솝우화", steps:aesopSteps, audio:/이솝|aesop|fable/i},
+  jbj:{name:"Junie B. Jones", e:"🎒", ko:"주니 비 존스", steps:JBJ_STEPS, audio:/junie|주니\s*비/i},
+  mw:{name:"Mercy Watson", e:"🐷", ko:"머시 왓슨", steps:MW_STEPS, audio:/mercy|머시\s*왓슨|deckawoo/i},
   ort:{name:"Oxford Reading Tree", e:"🔑", ko:"ORT", steps:ORT_STEPS},
-  dm:{name:"Dragon Masters", e:"🐉", ko:"드래곤 마스터즈", steps:()=>[...DM_STEPS.slice(0,5), DM_STEPS[6], ...commonQs()]},
+  dm:{name:"Dragon Masters", e:"🐉", ko:"드래곤 마스터즈", steps:()=>[...DM_STEPS.slice(0,5), DM_STEPS[6], ...commonQs()], audio:/dragon\s*master|드래곤\s*마스터/i},
   other:{name:"다른 책", e:"📖", ko:"제목 적기", steps:OTHER_STEPS}
 };
 let series='box', otherTitle='';
@@ -1148,8 +1387,20 @@ function renderBooks(){
   }
   $('otherRow').classList.toggle('hidden',series!=='other');
   $('boxRow').classList.toggle('hidden',series!=='box');
+  $('mthRow').classList.toggle('hidden',series!=='mth');
+  $('aesopRow').classList.toggle('hidden',series!=='aesop');
   $('boxBookNo').value=boxBook;
+  $('mthBookNo').value=mthBook;
+  $('aesopPick').value=String(aesopIdx);
   $('otherTitle').value=otherTitle;
+}
+function fillAesop(){
+  const s=$('aesopPick'); s.innerHTML='';
+  AESOP.forEach((f,k)=>{
+    const o=document.createElement('option'); o.value=String(k);
+    o.textContent=`${f.b}-${f.n}. ${f.en} · ${f.ko}`;
+    s.appendChild(o);
+  });
 }
 document.querySelectorAll('.md').forEach(b=>b.onclick=()=>{
   MODE=b.dataset.md; try{localStorage.setItem('emmaMode',MODE);}catch(e){}
@@ -1310,7 +1561,7 @@ function finish(){
     series: state.series==='parrot' ? ('🦜 따라 말하기 · '+state.title)
           : state.series==='talk' ? ('🗣 영어회화 · '+state.title)
           : state.series==='other' ? state.title
-          : (SERIES[state.series]?SERIES[state.series].name:'책'),
+          : ((SERIES[state.series]?SERIES[state.series].name:'책')+(state.title?(' · '+state.title):'')),
     book:state.book,fav:state.fav||state.dragon||null,live:LIVE,log};
   try{ const all=JSON.parse(localStorage.getItem('emmaLogs')||'[]'); all.push(record); localStorage.setItem('emmaLogs',JSON.stringify(all)); }catch(e){}
   window._record=record;
@@ -1325,7 +1576,7 @@ function recordText(r){
 /* ================= 🎧 음원 듣기 =================
    집에 있는 영어 음원(D:\영어 음원)을 이 컴퓨터 안에서만 듣는다.
    공개 사이트에서는 서버가 없으니 버튼 자체가 안 보인다. */
-let AUDIO_OK=false, audioPath='', audioStack=[], AU=null, curTrack='';
+let AUDIO_OK=false, audioPath='', audioStack=[], AU=null, curTrack='', lastItems=[];
 async function checkAudio(){
   try{ const r=await fetch('audio/ping?who=emma',{cache:'no-store'}); if(!r.ok) return false; const j=await r.json(); return !!j.ok; }
   catch(e){ return false; }
@@ -1335,6 +1586,7 @@ function tidyName(n){
   t=t.replace(/^[A-Za-z.\s]{4,30}\s-\s/,'');                 // 작가 이름
   t=t.replace(/\s*-\s*[A-Za-z]+\s*\(Ch\)\s*$/i,'');          // 낭독자 표시
   t=t.replace(/^BC\s*0*\d+\s*-?\s*/i,'');                    // 시리즈 코드
+  t=t.replace(/\s*\([^)]*voice[^)]*\)\s*/gi,' ');            // 이솝 음원의 낭독자 표시
   t=t.replace(/_/g,' ').replace(/\s+/g,' ').replace(/^[\s.\-]+|[\s.\-]+$/g,'');
   return t||String(n);
 }
@@ -1360,6 +1612,7 @@ async function openAudio(rel){
   let j;
   try{ j=await (await fetch('audio/list?who=emma&p='+encodeURIComponent(audioPath),{cache:'no-store'})).json(); }
   catch(e){ box.innerHTML='<div class="empty">음원을 불러오지 못했어요.</div>'; return; }
+  lastItems=j.items||[];
   if(!j.items || !j.items.length){ box.innerHTML='<div class="empty">여기엔 파일이 없어요.</div>'; return; }
   box.innerHTML='';
   j.items.forEach(it=>{
@@ -1387,7 +1640,10 @@ function playTrack(rel,label){
     $('pfill').style.width=(AU.duration?(AU.currentTime/AU.duration*100):0)+'%';
     if(Math.floor(AU.currentTime)%5===0){ try{ localStorage.setItem('aupos:'+rel,String(AU.currentTime)); }catch(e){} }
   });
-  AU.addEventListener('ended',()=>{ $('pplay').textContent='▶'; try{ localStorage.removeItem('aupos:'+rel); }catch(e){} });
+  // 다 들으면 바로 말하기로 넘어가자고 부른다 — 듣기만 하고 끝나지 않게
+  AU.addEventListener('ended',()=>{ $('pplay').textContent='▶'; try{ localStorage.removeItem('aupos:'+rel); }catch(e){}
+    $('lstTalk').textContent='✅ 다 들었네! 이제 Emma랑 이야기하기 →'; $('lstTalk').classList.add('done'); });
+  $('lstTalk').textContent='📖 이 책으로 이야기하기'; $('lstTalk').classList.remove('done');
   AU.playbackRate=parseFloat($('player').dataset.rate||'1');
   AU.play().then(()=>$('pplay').textContent='⏸').catch(()=>$('pplay').textContent='▶');
   openAudio(audioPath);
@@ -1404,6 +1660,54 @@ function audioWire(){
   });
 }
 function stopAudio(){ if(AU){ AU.pause(); } }
+
+/* 🎧 → 📖 : 방금 들은 것이 무엇인지 폴더·파일 이름에서 알아내 그 책 대화로 바로 넘긴다.
+   여기가 이어지지 않으면 이 화면은 그냥 재생기가 된다. */
+function chapterOf(file){
+  if(/opening|credit|title|end\s*cred/i.test(file)) return null;   // 오프닝·엔딩은 챕터가 아니다
+  let m=file.match(/chapter\s*(\d+)/i); if(m) return +m[1];
+  m=file.match(/^\s*(\d{1,2})\s*[-.\s]/);  if(m) return +m[1];
+  return null;
+}
+function linkFromAudio(){
+  const rel=curTrack||audioPath;
+  if(!rel) return false;
+  const parts=rel.split('/').filter(Boolean);
+  const file=/\.mp3$/i.test(parts[parts.length-1]||'') ? parts.pop() : '';
+  audioChapter=null;
+  for(const k in SERIES){
+    const re=SERIES[k].audio;
+    if(!re || !re.test(rel)) continue;
+    series=k;
+    if(k==='aesop'){
+      const m=(file+' '+rel).match(/Book\s*(\d+)[^\d]{0,12}Fable\s*(\d+)/i);
+      if(m){ const idx=AESOP.findIndex(f=>f.b===+m[1] && f.n===+m[2]);
+             if(idx>=0){ aesopIdx=idx; try{localStorage.setItem('emmaAesop',String(idx));}catch(e){} } }
+    }
+    if(k==='mth'){
+      const bf=parts.find(p=>/^\s*\d{1,2}\s*[-\s]/.test(p));
+      const bn=bf?parseInt(bf.match(/^\s*(\d{1,2})/)[1],10):0;
+      if(bn>=1 && bn<=28){ mthBook=bn; try{localStorage.setItem('emmaMthBook',String(bn));}catch(e){} }
+      if(file) audioChapter=chapterOf(file);        // 한 챕터만 들었으면 그 챕터만 이야기한다
+    }
+    if(k==='box'){
+      const bf=parts.find(p=>/BC\s*\d{1,3}/i.test(p));
+      const bn=bf?parseInt(bf.match(/BC\s*0*(\d{1,3})/i)[1],10):0;
+      if(bn>=1 && bn<=19){ boxBook=bn; try{localStorage.setItem('emmaBoxBook',String(bn));}catch(e){} }
+    }
+    try{localStorage.setItem('emmaSeries',series);}catch(e){}
+    return true;
+  }
+  return false;
+}
+// 🎧를 누르면 지금 고른 책의 음원 폴더로 바로 들어간다
+function jumpToSeries(){
+  if(MODE!=='book') return;
+  const re=SERIES[series] && SERIES[series].audio;
+  if(!re) return;
+  const hit=(lastItems||[]).find(it=>it.type==='dir' && re.test(it.name));
+  if(hit) openAudio(hit.path);
+}
 /* ---------------- 버튼 ---------------- */
 $('go').onclick=async()=>{
   $('go').textContent='목소리 준비 중…';
@@ -1422,14 +1726,27 @@ $('go').onclick=async()=>{
     const n=parseInt($('boxBookNo').value,10);
     if(n>=1 && n<=19){ boxBook=n; try{localStorage.setItem('emmaBoxBook',String(n));}catch(e){} }
   }
+  if(series==='mth'){
+    const n=parseInt($('mthBookNo').value,10);
+    if(n>=1 && n<=28){ mthBook=n; try{localStorage.setItem('emmaMthBook',String(n));}catch(e){} }
+  }
+  if(series==='aesop'){
+    const k=parseInt($('aesopPick').value,10);
+    if(AESOP[k]){ aesopIdx=k; try{localStorage.setItem('emmaAesop',String(k));}catch(e){} }
+  }
   if(series==='other'){
     otherTitle=$('otherTitle').value.trim();
     if(!otherTitle){ $('go').textContent='▶ 시작하기'; $('otherTitle').focus(); $('otherTitle').placeholder='책 제목을 먼저 적어 줘!'; return; }
     try{ localStorage.setItem('emmaOtherTitle',otherTitle); }catch(e){}
   }
-  state={book:null,series,title:series==='other'?otherTitle:null};
+  const subTitle = series==='other' ? otherTitle
+    : series==='aesop' ? AESOP[aesopIdx].en
+    : series==='mth' ? `#${mthBook} ${MTH_TITLES[mthBook]||''}`+(audioChapter?` ch.${audioChapter}`:'')
+    : null;
+  state={book:series==='mth'?mthBook:null,series,title:subTitle};
   STEPS=SERIES[series].steps(); bookAdded=false;
-  $('booktag').textContent=series==='other'?otherTitle:SERIES[series].name;
+  $('booktag').textContent=series==='other'?otherTitle
+    : SERIES[series].e+' '+(subTitle||SERIES[series].name);
   i=0; log=[]; startTimer(); show('talk'); renderStep();
   $('go').textContent='▶ 시작하기';
 };
@@ -1442,15 +1759,24 @@ $('next').onclick=()=>{ if(rec&&listening) rec.stop(); if(STEPS[i].last){finish(
 $('send').onclick=()=>{const v=$('typed').value.trim(); if(v){$('typed').value=''; answer(v);}};
 $('typed').onkeydown=e=>{ if(e.key==='Enter') $('send').click(); };
 $('copy').onclick=async()=>{ try{ await navigator.clipboard.writeText(recordText(window._record)); $('copy').textContent='✅ 복사했어요 — 나도 창에 붙여 주세요'; }catch(e){ $('copy').textContent='복사 실패 — 화면 기록을 보여 주세요'; } };
+fillAesop();
 renderBooks();
 audioWire();
-$('listenBtn').onclick=()=>{ show('listen'); openAudio(''); };
+// 목소리는 시작 버튼을 누르기 전부터 찾아 둔다 — 엣지 자연 음성이 몇 초 늦게 오기 때문
+loadVoice();
+const rescanNow=()=>{ if(rescan()) say("Hi Nayul! It's Emma. Can you hear me?"); };
+$('vwarn').onclick=rescanNow;
+$('voice').onclick=rescanNow;
+$('voice').style.cursor='pointer';
+$('listenBtn').onclick=async()=>{ show('listen'); curTrack=''; await openAudio(''); jumpToSeries(); };
 $('lstBack').onclick=()=>show('start');
 $('lstTalk').onclick=()=>{
-  const title=currentBookTitle();
-  if(/boxcar/i.test(audioPath)){ series='box'; }
-  else { series='other'; otherTitle=title; try{localStorage.setItem('emmaOtherTitle',title);}catch(e){} }
-  try{localStorage.setItem('emmaSeries',series);}catch(e){}
+  if(!linkFromAudio()){                       // 아는 시리즈가 아니면 제목만 들고 간다
+    const title=currentBookTitle();
+    series='other'; otherTitle=title;
+    try{localStorage.setItem('emmaOtherTitle',title);}catch(e){}
+    try{localStorage.setItem('emmaSeries',series);}catch(e){}
+  }
   MODE='book'; try{localStorage.setItem('emmaMode','book');}catch(e){}
   show('start'); renderBooks(); $('go').click();
 };
